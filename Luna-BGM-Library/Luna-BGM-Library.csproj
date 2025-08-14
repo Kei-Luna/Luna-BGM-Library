@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <None Include="Tools\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\README.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="CreatePCKFolder" AfterTargets="Build">
