@@ -1,0 +1,192 @@
+<Window x:Class="LunaBgmLibrary.EqualizerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Equalizer" Height="520" Width="780"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1A1A1A" Foreground="#FFFFFF">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8" VerticalAlignment="Center">
+            <TextBlock Text="Preset:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="PresetBox" Width="220" SelectionChanged="PresetBox_SelectionChanged"
+                      Background="#111" BorderBrush="#333"/>
+            <Button x:Name="ResetBtn" Content="Reset to Flat" Margin="12,0,0,0" Click="ResetBtn_Click"
+                    Background="#1E1E1E" Foreground="#FFFFFF" BorderBrush="#333333"/>
+        </StackPanel>
+
+        <DockPanel Grid.Row="1" Margin="0,0,0,6">
+            <TextBlock Text="+12 dB" DockPanel.Dock="Left" Opacity="0.8"/>
+            <TextBlock Text="-12 dB" DockPanel.Dock="Right" Opacity="0.8"/>
+        </DockPanel>
+
+        <Border Grid.Row="2" Height="420" Padding="6"
+                Background="#0F0F0F" BorderBrush="#2A2A2A" BorderThickness="1" CornerRadius="6"
+                SnapsToDevicePixels="True" ClipToBounds="True">
+            <UniformGrid Rows="1" Columns="10" Margin="4,2,4,2" ClipToBounds="True">
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="31 Hz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B0" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B0V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="62 Hz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B1" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B1V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="125 Hz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B2" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B2V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="250 Hz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B3" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B3V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="500 Hz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B4" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B4V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="1 kHz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B5" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B5V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="2 kHz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B6" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B6V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="4 kHz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B7" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B7V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="8 kHz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B8" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B8V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+
+                <Grid Margin="6" ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="16 kHz" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <Slider x:Name="B9" Grid.Row="1" Orientation="Vertical"
+                            Minimum="-12" Maximum="12" TickFrequency="1"
+                            TickPlacement="Both" IsSnapToTickEnabled="True"
+                            VerticalAlignment="Stretch" Margin="0,8,0,8"
+                            ValueChanged="Band_ValueChanged"/>
+                    <TextBlock x:Name="B9V" Grid.Row="2" Text="0 dB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </Grid>
+            </UniformGrid>
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="80" Margin="0,8,8,0" Click="Ok_Click"
+                    Background="#1E1E1E" Foreground="#FFFFFF" BorderBrush="#333333"/>
+            <Button Content="Cancel" Width="80" Margin="0,8,0,0" Click="Cancel_Click"
+                    Background="#1E1E1E" Foreground="#FFFFFF" BorderBrush="#333333"/>
+        </StackPanel>
+    </Grid>
+</Window>
