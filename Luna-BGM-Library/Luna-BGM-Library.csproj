@@ -17,4 +17,12 @@
     <PackageReference Include="TagLibSharp" Version="2.2.0" />
     <None Include="Luna-BGM-Library.ico" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Tools\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CreatePCKFolder" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath)PCK" />
+  </Target>
 </Project>

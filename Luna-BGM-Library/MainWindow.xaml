@@ -37,6 +37,16 @@
                         BorderThickness="0"
                         ToolTip="Equalizer"
                         Click="SettingsButton_Click"/>
+                <Button x:Name="UnpackButton"
+                        Content="📦"
+                        Width="28" Height="28"
+                        DockPanel.Dock="Right"
+                        Margin="0,0,12,0"
+                        Background="Transparent"
+                        Foreground="White"
+                        BorderThickness="0"
+                        ToolTip="Unpack PCK Files"
+                        Click="UnpackButton_Click"/>
         </DockPanel>
 
         <Border Grid.Row="1" Grid.Column="0" Margin="0 0 12 0" Padding="8"

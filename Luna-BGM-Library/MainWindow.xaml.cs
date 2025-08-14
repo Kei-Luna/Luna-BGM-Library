@@ -328,6 +328,133 @@ namespace LunaBgmLibrary
             }
         }
 
+        private async void UnpackButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var pckDir = Path.Combine(AppContext.BaseDirectory, "PCK");
+                if (!Directory.Exists(pckDir))
+                {
+                    MessageBox.Show("PCK folder not found. Please create a PCK folder and place your PCK files inside.", "PCK Folder Missing", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var pckFiles = Directory.GetFiles(pckDir, "*.pck", SearchOption.AllDirectories);
+                if (pckFiles.Length == 0)
+                {
+                    MessageBox.Show("No PCK files found in the PCK folder.", "No PCK Files", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var result = MessageBox.Show($"Found {pckFiles.Length} PCK file(s). This will unpack them to FLAC format in the BGM folder and delete the PCK files afterward. Continue?", 
+                    "Confirm Unpack", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                UnpackButton.IsEnabled = false;
+                UnpackButton.Content = "⏳";
+
+                await Task.Run(() => UnpackPckFiles(pckDir));
+
+                MessageBox.Show("PCK files unpacked successfully!", "Unpack Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error during unpacking: {ex.Message}", "Unpack Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                UnpackButton.IsEnabled = true;
+                UnpackButton.Content = "📦";
+            }
+        }
+
+        private void UnpackPckFiles(string pckDir)
+        {
+            var toolsDir = Path.Combine(AppContext.BaseDirectory, "Tools");
+            var quickbmsPath = Path.Combine(toolsDir, "quickbms.exe");
+            var extractorScript = Path.Combine(toolsDir, "wwise_pck_extractor.bms");
+            var vgmstreamPath = Path.Combine(toolsDir, "vgmstream-cli.exe");
+
+            if (!File.Exists(quickbmsPath) || !File.Exists(extractorScript) || !File.Exists(vgmstreamPath))
+            {
+                throw new FileNotFoundException("Required tools not found in Tools folder.");
+            }
+
+            var pckFiles = Directory.GetFiles(pckDir, "*.pck", SearchOption.AllDirectories);
+            
+            foreach (var pckFile in pckFiles)
+            {
+                var relativePath = Path.GetRelativePath(pckDir, Path.GetDirectoryName(pckFile));
+                var outputDir = Path.Combine(_bgmDir, relativePath);
+                Directory.CreateDirectory(outputDir);
+
+                var tempDir = Path.Combine(Path.GetTempPath(), "luna_pck_extract", Path.GetRandomFileName());
+                Directory.CreateDirectory(tempDir);
+
+                try
+                {
+                    var extractProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = quickbmsPath,
+                            Arguments = $"-o \"{extractorScript}\" \"{pckFile}\" \"{tempDir}\"",
+                            UseShellExecute = false,
+                            CreateNoWindow = true,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true
+                        }
+                    };
+
+                    extractProcess.Start();
+                    extractProcess.WaitForExit();
+
+                    var extractedFiles = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories)
+                        .Where(f => !Path.GetExtension(f).Equals(".txt", StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+
+                    foreach (var extractedFile in extractedFiles)
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension(extractedFile);
+                        var outputFile = Path.Combine(outputDir, fileName + ".flac");
+
+                        var convertProcess = new Process
+                        {
+                            StartInfo = new ProcessStartInfo
+                            {
+                                FileName = vgmstreamPath,
+                                Arguments = $"-o \"{outputFile}\" \"{extractedFile}\"",
+                                UseShellExecute = false,
+                                CreateNoWindow = true,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true
+                            }
+                        };
+
+                        convertProcess.Start();
+                        convertProcess.WaitForExit();
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, true);
+                    }
+                }
+            }
+
+            foreach (var item in Directory.GetFileSystemEntries(pckDir))
+            {
+                if (Directory.Exists(item))
+                    Directory.Delete(item, true);
+                else
+                    File.Delete(item);
+            }
+        }
+
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             var bands = UserSettings.ToBands(_settings.EqGainDb);
