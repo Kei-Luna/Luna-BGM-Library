@@ -355,7 +355,12 @@ namespace LunaBgmLibrary
                 UnpackButton.IsEnabled = false;
                 UnpackButton.Content = "⏳";
 
+                _watcher.EnableRaisingEvents = false;
+
                 await Task.Run(() => UnpackPckFiles(pckDir));
+
+                _watcher.EnableRaisingEvents = true;
+                ReloadAllSafe();
 
                 MessageBox.Show("PCK files unpacked successfully!", "Unpack Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -365,6 +370,7 @@ namespace LunaBgmLibrary
             }
             finally
             {
+                _watcher.EnableRaisingEvents = true;
                 UnpackButton.IsEnabled = true;
                 UnpackButton.Content = "📦";
             }
