@@ -10,22 +10,8 @@ namespace LunaBgmLibrary.Services
         private readonly int _fftLength;
         private readonly Complex[] _fftBuffer;
         private readonly float[] _spectrumData;
+        private readonly float[] _smoothedData;
         private volatile bool _enabled;
-
-        private float _emaTopDb   = -25f;
-        private float _emaFloorDb = -85f;
-
-        private const float TopAttack   = 0.35f;
-        private const float TopRelease  = 0.06f;
-        private const float FloorAttack = 0.08f;
-        private const float FloorRelease= 0.02f;
-
-        private const float TargetWindowDb = 60f;
-        private const float MinWindowDb    = 45f;
-        private const float MaxWindowDb    = 75f;
-
-        private const float Eps = 1e-12f;
-        private const float NoiseGateDb = -100f;
 
         public event EventHandler<SpectrumEventArgs>? SpectrumUpdated;
 
@@ -36,12 +22,13 @@ namespace LunaBgmLibrary.Services
             set => _enabled = value;
         }
 
-        public SpectrumAnalyzer(int spectrumBands = 32, int fftSize = 4096)
+        public SpectrumAnalyzer(int spectrumBands = 64, int fftSize = 2048)
         {
-            SpectrumBands = Math.Max(4, Math.Min(128, spectrumBands));
-            _fftLength = Math.Max(1024, GetNextPowerOfTwo(fftSize));
+            SpectrumBands = Math.Max(8, Math.Min(256, spectrumBands));
+            _fftLength = GetNextPowerOfTwo(fftSize);
             _fftBuffer = new Complex[_fftLength];
             _spectrumData = new float[SpectrumBands];
+            _smoothedData = new float[SpectrumBands];
             _enabled = true;
         }
 
@@ -53,37 +40,12 @@ namespace LunaBgmLibrary.Services
             {
                 try
                 {
-                    Array.Clear(_fftBuffer, 0, _fftBuffer.Length);
-
-                    int samplesToProcess = Math.Min(samples.Length, _fftLength);
-
-                    if (format.Channels == 2)
-                    {
-                        int monoCount = Math.Min(samplesToProcess / 2, _fftLength);
-                        for (int i = 0; i < monoCount; i++)
-                        {
-                            float mono = (samples[i * 2] + samples[i * 2 + 1]) * 0.5f;
-                            _fftBuffer[i].X = mono;
-                            _fftBuffer[i].Y = 0;
-                        }
-                        samplesToProcess = monoCount;
-                    }
-                    else
-                    {
-                        for (int i = 0; i < samplesToProcess; i++)
-                        {
-                            _fftBuffer[i].X = samples[i];
-                            _fftBuffer[i].Y = 0;
-                        }
-                    }
-
-                    ApplyHannWindow(_fftBuffer, samplesToProcess);
-
-                    FastFourierTransform.FFT(true, (int)Math.Log(_fftLength, 2.0), _fftBuffer);
-
-                    ConvertToSpectrumBands(format.SampleRate);
-
-                    SpectrumUpdated?.Invoke(this, new SpectrumEventArgs(_spectrumData));
+                    PrepareFFTBuffer(samples, format);
+                    PerformFFT();
+                    ConvertToSpectrum(format.SampleRate);
+                    ApplySmoothing();
+                    
+                    SpectrumUpdated?.Invoke(this, new SpectrumEventArgs(_smoothedData));
                 }
                 catch (Exception ex)
                 {
@@ -92,90 +54,90 @@ namespace LunaBgmLibrary.Services
             }
         }
 
-        private void ApplyHannWindow(Complex[] buffer, int length)
+        private void PrepareFFTBuffer(float[] samples, WaveFormat format)
         {
-            for (int i = 0; i < length; i++)
+            Array.Clear(_fftBuffer, 0, _fftBuffer.Length);
+            int samplesToProcess = Math.Min(samples.Length, _fftLength);
+
+            if (format.Channels == 2)
             {
-                double w = 0.5 - 0.5 * Math.Cos(2 * Math.PI * i / (length - 1));
-                buffer[i].X *= (float)w;
+                for (int i = 0; i < samplesToProcess / 2 && i < _fftLength; i++)
+                {
+                    float mono = (samples[i * 2] + samples[i * 2 + 1]) * 0.5f;
+                    _fftBuffer[i].X = mono * GetWindow(i, samplesToProcess / 2);
+                    _fftBuffer[i].Y = 0;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < samplesToProcess && i < _fftLength; i++)
+                {
+                    _fftBuffer[i].X = samples[i] * GetWindow(i, samplesToProcess);
+                    _fftBuffer[i].Y = 0;
+                }
             }
         }
 
-        private void ConvertToSpectrumBands(int sampleRate)
+        private void PerformFFT()
         {
-            Array.Clear(_spectrumData, 0, _spectrumData.Length);
+            FastFourierTransform.FFT(true, (int)Math.Log(_fftLength, 2.0), _fftBuffer);
+        }
 
-            int nyquist = sampleRate / 2;
-            int usableFFTBins = _fftLength / 2;
+        private float GetWindow(int i, int length)
+        {
+            return (float)(0.5 - 0.5 * Math.Cos(2 * Math.PI * i / (length - 1)));
+        }
 
-            float topDb = float.NegativeInfinity;
-            float floorDb = float.PositiveInfinity;
-
-            Span<float> bandDb = stackalloc float[SpectrumBands];
-
-            for (int band = 0; band < SpectrumBands; band++)
-            {
-                double startFreq = GetBandFrequency(band, SpectrumBands, nyquist);
-                double endFreq   = GetBandFrequency(band + 1, SpectrumBands, nyquist);
-
-                int startBin = Math.Max(1, (int)(startFreq * usableFFTBins / nyquist));
-                int endBin   = Math.Min(usableFFTBins - 1, (int)(endFreq  * usableFFTBins / nyquist));
-
-                float mag = 0f;
-                int binCount = 0;
-
-                for (int bin = startBin; bin <= endBin; bin++)
-                {
-                    float re = _fftBuffer[bin].X;
-                    float im = _fftBuffer[bin].Y;
-                    mag += (float)Math.Sqrt(re * re + im * im);
-                    binCount++;
-                }
-
-                if (binCount > 0) mag /= binCount;
-
-                float db = 20f * (float)Math.Log10(mag + Eps);
-
-                if (db < NoiseGateDb) db = NoiseGateDb;
-
-                bandDb[band] = db;
-                if (db > topDb) topDb = db;
-                if (db < floorDb) floorDb = db;
-            }
-
-            UpdateEma(ref _emaTopDb,   topDb,   TopAttack,   TopRelease);
-            UpdateEma(ref _emaFloorDb, floorDb, FloorAttack, FloorRelease);
-
-            float window = Clamp(TargetWindowDb, MinWindowDb, MaxWindowDb);
-
-            float displayTop   = Math.Max(-10f, _emaTopDb);
-            float displayFloor = Math.Min(_emaFloorDb, displayTop - window);
-
-            float invRange = 1f / Math.Max(1e-6f, (displayTop - displayFloor));
-
+        private void ConvertToSpectrum(int sampleRate)
+        {
+            int bins = _fftLength / 2;
+            float binWidth = (float)sampleRate / _fftLength;
+            
             for (int i = 0; i < SpectrumBands; i++)
             {
-                float v = (bandDb[i] - displayFloor) * invRange;
-                v = Clamp(v, 0f, 1f);
-
-                const float gamma = 0.85f;
-                v = (float)Math.Pow(v, gamma);
-
-                _spectrumData[i] = v;
+                float freq = GetFrequencyForBand(i);
+                int binIndex = (int)(freq / binWidth);
+                
+                if (binIndex < bins)
+                {
+                    float magnitude = GetMagnitude(binIndex);
+                    _spectrumData[i] = Math.Min(1.0f, magnitude * 2.0f);
+                }
+                else
+                {
+                    _spectrumData[i] = 0.0f;
+                }
             }
         }
 
-        private static void UpdateEma(ref float ema, float x, float attack, float release)
+        private float GetFrequencyForBand(int band)
         {
-            float a = x > ema ? attack : release;
-            ema = ema + a * (x - ema);
+            float minFreq = 250.0f;
+            float maxFreq = 20000.0f;
+            float logMin = (float)Math.Log10(minFreq);
+            float logMax = (float)Math.Log10(maxFreq);
+            float logRange = logMax - logMin;
+            
+            return (float)Math.Pow(10, logMin + (logRange * band / (SpectrumBands - 1)));
         }
 
-        private static double GetBandFrequency(int band, int totalBands, int nyquist)
+        private float GetMagnitude(int binIndex)
         {
-            double minFreq = 10.0;
-            double maxFreq = Math.Min(nyquist * 0.95, 20000.0);
-            return minFreq * Math.Pow(maxFreq / minFreq, (double)band / totalBands);
+            if (binIndex >= _fftBuffer.Length) return 0.0f;
+            
+            float real = _fftBuffer[binIndex].X;
+            float imag = _fftBuffer[binIndex].Y;
+            return (float)Math.Sqrt(real * real + imag * imag);
+        }
+
+        private void ApplySmoothing()
+        {
+            const float smoothFactor = 0.8f;
+            
+            for (int i = 0; i < SpectrumBands; i++)
+            {
+                _smoothedData[i] = _smoothedData[i] * smoothFactor + _spectrumData[i] * (1.0f - smoothFactor);
+            }
         }
 
         private static int GetNextPowerOfTwo(int value)
@@ -184,8 +146,6 @@ namespace LunaBgmLibrary.Services
             while (power < value) power <<= 1;
             return power;
         }
-
-        private static float Clamp(float v, float lo, float hi) => v < lo ? lo : (v > hi ? hi : v);
 
         public void Dispose()
         {
