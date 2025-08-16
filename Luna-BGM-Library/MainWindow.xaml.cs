@@ -21,6 +21,7 @@ namespace LunaBgmLibrary
     public partial class MainWindow : Window
     {
         private const string AllFoldersLabel = "All folders";
+        private const string RootFolderLabel = "BGM (root)";
 
         private readonly string _bgmDir;
         private readonly AudioPlayer _player = new AudioPlayer();
@@ -54,7 +55,7 @@ namespace LunaBgmLibrary
             _settings = UserSettings.Load(_settingsPath);
 
             FolderPicker.ItemsSource = _folderItems;
-            RefreshFolderList(selectLabel: AllFoldersLabel);
+            RefreshFolderList(selectLabel: RootFolderLabel);
 
             ReloadPlaylist();
             PlaylistView.ItemsSource = _filtered;
@@ -117,23 +118,26 @@ namespace LunaBgmLibrary
             var sel = FolderPicker.SelectedItem as string;
             if (string.IsNullOrWhiteSpace(sel) || sel == AllFoldersLabel)
                 return null;
+            if (sel == RootFolderLabel)
+                return "";
             return sel.Replace('/', Path.DirectorySeparatorChar);
         }
 
         private void RefreshFolderList(string? selectLabel = null)
         {
-            var currentSel = selectLabel ?? (FolderPicker.SelectedItem as string) ?? AllFoldersLabel;
+            var currentSel = selectLabel ?? (FolderPicker.SelectedItem as string) ?? RootFolderLabel;
 
             var rels = PlaylistService.GetRelativeFolders(_bgmDir);
             _folderItems.Clear();
             _folderItems.Add(AllFoldersLabel);
+            _folderItems.Add(RootFolderLabel);
             foreach (var r in rels)
                 _folderItems.Add(r);
 
             if (_folderItems.Contains(currentSel))
                 FolderPicker.SelectedItem = currentSel;
             else
-                FolderPicker.SelectedItem = AllFoldersLabel;
+                FolderPicker.SelectedItem = RootFolderLabel;
         }
 
         private void ReloadPlaylist()

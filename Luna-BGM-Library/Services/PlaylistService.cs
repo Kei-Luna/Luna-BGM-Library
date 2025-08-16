@@ -18,19 +18,33 @@ namespace LunaBgmLibrary.Services
                 Directory.CreateDirectory(bgmRoot);
 
             string searchRoot = bgmRoot;
-            if (!string.IsNullOrWhiteSpace(relativeSubdir))
+            SearchOption searchOption;
+            
+            if (relativeSubdir == null)
             {
+                // All folders - search all subdirectories recursively
+                searchOption = SearchOption.AllDirectories;
+            }
+            else if (relativeSubdir == "")
+            {
+                // BGM root folder only - no subdirectories
+                searchOption = SearchOption.TopDirectoryOnly;
+            }
+            else
+            {
+                // Specific subfolder - only files in that folder, no deeper subdirectories
                 var full = Path.GetFullPath(Path.Combine(bgmRoot, relativeSubdir));
                 var rootFull = Path.GetFullPath(bgmRoot) + Path.DirectorySeparatorChar;
                 if (!full.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase))
                     full = bgmRoot;
                 searchRoot = full;
+                searchOption = SearchOption.TopDirectoryOnly;
             }
 
             var files = Directory.EnumerateFiles(
                             searchRoot,
                             "*.*",
-                            SearchOption.AllDirectories)
+                            searchOption)
                         .Where(f => Supported.Contains(Path.GetExtension(f).ToLowerInvariant()))
                         .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                         .ToList();
