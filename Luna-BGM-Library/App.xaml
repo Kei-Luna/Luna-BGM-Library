@@ -5,6 +5,9 @@
              StartupUri="MainWindow.xaml">
   <Application.Resources>
     <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Themes/Overrides.xaml"/>
+      </ResourceDictionary.MergedDictionaries>
       <local:AllFoldersForegroundConverter x:Key="AllFoldersForegroundConverter"/>
     </ResourceDictionary>
   </Application.Resources>

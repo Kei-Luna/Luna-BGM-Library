@@ -318,6 +318,11 @@ namespace LunaBgmLibrary
             }
         }
 
+        private void SeekBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _isSeeking = true;
+        }
+
         private void SeekBar_MouseUp(object sender, MouseButtonEventArgs e)
         {
             _isSeeking = false;
