@@ -17,6 +17,7 @@ Honkai: Star Rail
 Zenless Zone Zero  
 Azur Promilia  
 Fate Trigger  
+Honkai Impact 3  
 
 
 ## Requirements
