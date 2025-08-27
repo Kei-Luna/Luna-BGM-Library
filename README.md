@@ -7,7 +7,7 @@ It has the following features
  - Equalizer
  - Ability to download background music from various games
 
-
+If there are any features or BGM you would like to add, please contact me.  
 
 
 ## BGM downloads List
