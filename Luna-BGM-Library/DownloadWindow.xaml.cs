@@ -198,28 +198,41 @@ namespace LunaBgmLibrary
                     }
                 }
                 
-                StatusText.Text = $"Extracting {fileName}...";
-                await ExtractArchiveFile(downloadPath, _bgmDir, cancellationToken);
-                
-                await Task.Delay(100, cancellationToken);
-                
-                try
+                // Only extract if it's not a split archive or if it's the last part downloaded
+                if (ShouldExtractArchive(fileName, game.DownloadUrls, i))
                 {
-                    File.Delete(downloadPath);
+                    StatusText.Text = $"Extracting {fileName}...";
+                    await ExtractArchiveFile(downloadPath, _bgmDir, cancellationToken);
+                    
+                    // After successful extraction, delete all parts of split archives
+                    await CleanupSplitArchiveParts(fileName, downloadsFolder, cancellationToken);
                 }
-                catch (Exception ex)
+                else if (!Is7zSplitArchive(fileName))
                 {
-                    StatusText.Text = $"Warning: Could not delete temporary file: {ex.Message}";
-                    await Task.Delay(1000, cancellationToken);
+                    // Only delete non-split archives immediately
+                    await Task.Delay(100, cancellationToken);
+                    
+                    try
+                    {
+                        File.Delete(downloadPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        StatusText.Text = $"Warning: Could not delete temporary file: {ex.Message}";
+                        await Task.Delay(1000, cancellationToken);
+                    }
                 }
+                // Split archive parts are kept until extraction is complete
             }
         }
 
         private async Task ExtractArchiveFile(string archivePath, string extractPath, CancellationToken cancellationToken)
         {
             var fileExtension = Path.GetExtension(archivePath).ToLowerInvariant();
+            var fileName = Path.GetFileName(archivePath);
             
-            if (fileExtension == ".7z")
+            // Check for split 7z files (.001, .002, etc.) or regular .7z files
+            if (fileExtension == ".7z" || Is7zSplitArchive(fileName))
             {
                 await Extract7zWithExternalTool(archivePath, extractPath, cancellationToken);
             }
@@ -249,8 +262,26 @@ namespace LunaBgmLibrary
             }
             else
             {
-                throw new NotSupportedException($"Archive format '{fileExtension}' is not supported. Supported formats: .zip, .7z");
+                throw new NotSupportedException($"Archive format '{fileExtension}' is not supported. Supported formats: .zip, .7z, split 7z (.001, .002, etc.)");
             }
+        }
+
+        private bool Is7zSplitArchive(string fileName)
+        {
+            // Check if the file is a split 7z archive (e.g., filename.7z.001, filename.7z.002)
+            if (fileName.Contains(".7z.") && System.Text.RegularExpressions.Regex.IsMatch(fileName, @"\.7z\.\d{3}$"))
+            {
+                return true;
+            }
+            
+            // Check for other common split archive patterns (e.g., filename.001 where filename contains "7z")
+            if (System.Text.RegularExpressions.Regex.IsMatch(fileName, @"\.\d{3}$") && 
+                (fileName.ToLowerInvariant().Contains("7z") || fileName.ToLowerInvariant().Contains(".7z")))
+            {
+                return true;
+            }
+            
+            return false;
         }
 
         private async Task Extract7zWithExternalTool(string archivePath, string extractPath, CancellationToken cancellationToken)
@@ -266,10 +297,19 @@ namespace LunaBgmLibrary
 
             await Task.Run(() =>
             {
+                // For split archives, we need to use the first part (.001)
+                var targetArchive = GetFirstPartOfSplitArchive(archivePath);
+                
+                // Debug: Check if we found the first part
+                if (!File.Exists(targetArchive))
+                {
+                    throw new InvalidOperationException($"First part of split archive not found: {targetArchive}");
+                }
+                
                 var processInfo = new ProcessStartInfo
                 {
                     FileName = sevenZipPath,
-                    Arguments = $"x \"{archivePath}\" -o\"{extractPath}\" -y -bd",
+                    Arguments = $"x \"{targetArchive}\" -o\"{extractPath}\" -y -bd",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -282,10 +322,167 @@ namespace LunaBgmLibrary
                     process.WaitForExit();
                     if (process.ExitCode != 0)
                     {
-                        throw new InvalidOperationException($"7z extraction failed with exit code: {process.ExitCode}");
+                        var stdout = process.StandardOutput.ReadToEnd();
+                        var stderr = process.StandardError.ReadToEnd();
+                        throw new InvalidOperationException($"7z extraction failed with exit code: {process.ExitCode}\nOriginal file: {archivePath}\nTarget file: {targetArchive}\nStdOut: {stdout}\nStdErr: {stderr}");
                     }
                 }
             }, cancellationToken);
+        }
+
+        private string GetFirstPartOfSplitArchive(string archivePath)
+        {
+            var fileName = Path.GetFileName(archivePath);
+            var directory = Path.GetDirectoryName(archivePath) ?? "";
+            
+            // If it's already the first part (.001), return as is
+            if (fileName.EndsWith(".001", StringComparison.OrdinalIgnoreCase))
+            {
+                return archivePath;
+            }
+            
+            // If it's a split archive part (.002, .003, etc.), find the first part
+            if (System.Text.RegularExpressions.Regex.IsMatch(fileName, @"\.\d{3}$"))
+            {
+                var baseFileName = System.Text.RegularExpressions.Regex.Replace(fileName, @"\.\d{3}$", ".001");
+                var firstPartPath = Path.Combine(directory, baseFileName);
+                
+                if (File.Exists(firstPartPath))
+                {
+                    return firstPartPath;
+                }
+                else
+                {
+                    // Look for any .001 file in the directory that matches the pattern
+                    var allFiles = Directory.GetFiles(directory, "*.001");
+                    foreach (var file in allFiles)
+                    {
+                        var fileBaseName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(file));
+                        var originalBaseName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(fileName));
+                        if (fileBaseName.Equals(originalBaseName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return file;
+                        }
+                    }
+                }
+            }
+            
+            // If it's a .7z.xxx format
+            if (System.Text.RegularExpressions.Regex.IsMatch(fileName, @"\.7z\.\d{3}$"))
+            {
+                var baseFileName = System.Text.RegularExpressions.Regex.Replace(fileName, @"\.7z\.\d{3}$", ".7z.001");
+                var firstPartPath = Path.Combine(directory, baseFileName);
+                
+                if (File.Exists(firstPartPath))
+                {
+                    return firstPartPath;
+                }
+                else
+                {
+                    // Look for any .7z.001 file in the directory
+                    var pattern = System.Text.RegularExpressions.Regex.Replace(fileName, @"\.7z\.\d{3}$", ".7z.001");
+                    var searchPattern = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(pattern)) + ".7z.001";
+                    var matchingFiles = Directory.GetFiles(directory, "*" + searchPattern);
+                    if (matchingFiles.Length > 0)
+                    {
+                        return matchingFiles[0];
+                    }
+                }
+            }
+            
+            // Return original path if not a split archive or first part not found
+            return archivePath;
+        }
+
+        private bool ShouldExtractArchive(string fileName, List<string> allUrls, int currentIndex)
+        {
+            // If it's not a split archive, extract immediately
+            if (!Is7zSplitArchive(fileName))
+            {
+                return true;
+            }
+            
+            // For split archives, only extract when we've downloaded all parts
+            // Check if this is the last file in the download sequence (by index)
+            return currentIndex == allUrls.Count - 1;
+        }
+        
+        private int ExtractPartNumber(string fileName)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(fileName, @"\.(\d{3})$");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out int partNumber))
+            {
+                return partNumber;
+            }
+            return -1;
+        }
+
+        private async Task CleanupSplitArchiveParts(string fileName, string downloadsFolder, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (!Is7zSplitArchive(fileName))
+                {
+                    // Not a split archive, delete only this file
+                    var filePath = Path.Combine(downloadsFolder, fileName);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+                    return;
+                }
+
+                // For split archives, find and delete all parts
+                var basePattern = GetArchiveBasePattern(fileName);
+                if (string.IsNullOrEmpty(basePattern))
+                {
+                    return;
+                }
+
+                var allFiles = Directory.GetFiles(downloadsFolder, basePattern + "*");
+                foreach (var file in allFiles)
+                {
+                    var fileFileName = Path.GetFileName(file);
+                    if (Is7zSplitArchive(fileFileName) && IsSameArchiveSet(fileName, fileFileName))
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                        }
+                        catch (Exception ex)
+                        {
+                            StatusText.Text = $"Warning: Could not delete {fileFileName}: {ex.Message}";
+                            await Task.Delay(500, cancellationToken);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"Warning: Error during cleanup: {ex.Message}";
+                await Task.Delay(1000, cancellationToken);
+            }
+        }
+
+        private string GetArchiveBasePattern(string fileName)
+        {
+            // Remove the .xxx extension to get base pattern
+            if (System.Text.RegularExpressions.Regex.IsMatch(fileName, @"\.7z\.\d{3}$"))
+            {
+                return System.Text.RegularExpressions.Regex.Replace(fileName, @"\.7z\.\d{3}$", "");
+            }
+            else if (System.Text.RegularExpressions.Regex.IsMatch(fileName, @"\.\d{3}$"))
+            {
+                return System.Text.RegularExpressions.Regex.Replace(fileName, @"\.\d{3}$", "");
+            }
+            return fileName;
+        }
+
+        private bool IsSameArchiveSet(string fileName1, string fileName2)
+        {
+            var base1 = GetArchiveBasePattern(fileName1);
+            var base2 = GetArchiveBasePattern(fileName2);
+            return base1.Equals(base2, StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task ExtractWith7zFallback(string archivePath, string extractPath, CancellationToken cancellationToken)
