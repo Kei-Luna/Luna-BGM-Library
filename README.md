@@ -5,7 +5,18 @@ It's basically just an audio player.
 It has the following features  
  - Unpack the PCK files in the PCK folder and output them in flac format to the BGM folder.  
  - Equalizer
- - Ability to download background music from various games (Not implemented yet)
+ - Ability to download background music from various games
+
+
+
+
+## BGM downloads List
+
+Genshin Impact  
+Honkai: Star Rail  
+Zenless Zone Zero  
+Azur Promilia  
+Fate Trigger  
 
 
 ## Requirements
