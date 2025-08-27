@@ -1,26 +1,75 @@
 {
   "games": [
     {
-      "name": "Genshin Impact(Not implemented)",
+      "name": "Genshin Impact(v5.8.0)",
       "downloadUrls": [
-        "",
-        ""
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.001",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.002",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.003",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.004",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.005",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.006",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.007",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.008",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.009",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.010",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.011",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.012",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.013",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.014",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.015",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.016",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.017",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.018",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.019",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.020",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.021",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.022",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.023",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.024"
       ]
     },
     {
-      "name": "Honkai: Star Rail(Not implemented)",
+      "name": "Honkai: Star Rail(v3.5.0)",
       "downloadUrls": [
-        ""
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.001",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.002",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.003",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.004",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.005",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.006",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.007",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.008",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.009",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.010",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sr_3.5.0/Honkai-Star-Rail_v3.5.0.7z.011"
       ]
     },
     {
-      "name": "Zenless Zone Zero(Not implemented)",
+      "name": "Zenless Zone Zero(v2.1.0)",
       "downloadUrls": [
-        ""
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.001",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.002",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.003",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.004",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.005",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.006",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.007",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.008",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.009",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ZZZ_2.1.0/Zenless-Zone-Zero_2.1.0.7z.010"
       ]
     },
     {
-      "name": "Fate-Trigger",
+      "name": "Azur Promilia(CBT1)",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/az_1/Azur-Promilia_CBT1.7z.001",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/az_1/Azur-Promilia_CBT1.7z.002",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/az_1/Azur-Promilia_CBT1.7z.003"
+      ]
+    },
+    {
+      "name": "Fate-Trigger(CBT1)",
       "downloadUrls": [
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/v_1.0/Fate-Trigger.7z"
       ]
