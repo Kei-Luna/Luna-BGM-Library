@@ -85,12 +85,14 @@ namespace LunaBgmLibrary
                 VolumeSlider.Value = Math.Clamp(_settings.Volume, 0.0, 1.0);
                 _player.SetVolume((float)VolumeSlider.Value);
 
-                _player.SetEqualizerBands(_settings.EqBands);
+                if (_settings.EqBands != null)
+                    _player.SetEqualizerBands(_settings.EqBands);
             }
             catch
             {
                 _player.SetVolume(_settings.Volume);
-                _player.SetEqualizerBands(_settings.EqBands);
+                if (_settings.EqBands != null)
+                    _player.SetEqualizerBands(_settings.EqBands);
             }
         }
 
@@ -401,7 +403,8 @@ namespace LunaBgmLibrary
             
             foreach (var pckFile in pckFiles)
             {
-                var relativePath = Path.GetRelativePath(pckDir, Path.GetDirectoryName(pckFile));
+                var pckFileDir = Path.GetDirectoryName(pckFile);
+                var relativePath = pckFileDir != null ? Path.GetRelativePath(pckDir, pckFileDir) : "";
                 var outputDir = Path.Combine(_bgmDir, relativePath);
                 Directory.CreateDirectory(outputDir);
 

@@ -156,6 +156,11 @@ namespace LunaBgmLibrary
             for (int i = 0; i < game.DownloadUrls.Count; i++)
             {
                 var url = game.DownloadUrls[i];
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    continue;
+                }
+                
                 var fileName = Path.GetFileName(new Uri(url).LocalPath);
                 if (string.IsNullOrEmpty(fileName))
                 {
@@ -301,7 +306,7 @@ namespace LunaBgmLibrary
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     
-                    var destinationPath = Path.Combine(extractPath, entry.Key);
+                    var destinationPath = Path.Combine(extractPath, entry.Key ?? "");
                     var destinationDir = Path.GetDirectoryName(destinationPath);
                     
                     if (!string.IsNullOrEmpty(destinationDir))
