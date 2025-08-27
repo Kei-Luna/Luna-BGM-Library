@@ -470,6 +470,18 @@ namespace LunaBgmLibrary
             }
         }
 
+        private void DownloadButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new DownloadWindow(_bgmDir) { Owner = this };
+            if (dlg.ShowDialog() == true)
+            {
+                RefreshFolderList();
+                ReloadPlaylist();
+                MessageBox.Show("BGM files downloaded successfully!", "Download Complete", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             var bands = UserSettings.ToBands(_settings.EqGainDb);

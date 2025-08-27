@@ -15,12 +15,14 @@
     <PackageReference Include="MaterialDesignThemes" Version="5.0.0" />
     <PackageReference Include="MaterialDesignColors" Version="3.0.0" />
     <PackageReference Include="TagLibSharp" Version="2.2.0" />
+    <PackageReference Include="SharpCompress" Version="0.37.2" />
     <None Include="Luna-BGM-Library.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Tools\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\README.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="games.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="CreatePCKFolder" AfterTargets="Build">

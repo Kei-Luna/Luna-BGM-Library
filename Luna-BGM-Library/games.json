@@ -1,0 +1,29 @@
+{
+  "games": [
+    {
+      "name": "Genshin Impact(Not implemented)",
+      "downloadUrls": [
+        "",
+        ""
+      ]
+    },
+    {
+      "name": "Honkai: Star Rail(Not implemented)",
+      "downloadUrls": [
+        ""
+      ]
+    },
+    {
+      "name": "Zenless Zone Zero(Not implemented)",
+      "downloadUrls": [
+        ""
+      ]
+    },
+    {
+      "name": "Fate-Trigger",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/v_1.0/Fate-Trigger.7z"
+      ]
+    }
+  ]
+}

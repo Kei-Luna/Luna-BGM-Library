@@ -38,6 +38,15 @@
                         Style="{StaticResource ModernButtonStyle}"
                         ToolTip="Equalizer"
                         Click="SettingsButton_Click"/>
+                <Button x:Name="DownloadButton"
+                        Content="⬇️"
+                        Width="40" Height="40"
+                        DockPanel.Dock="Right"
+                        Margin="8,4,8,4"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource ModernButtonStyle}"
+                        ToolTip="Download BGM Files"
+                        Click="DownloadButton_Click"/>
                 <Button x:Name="UnpackButton"
                         Content="📦"
                         Width="40" Height="40"
