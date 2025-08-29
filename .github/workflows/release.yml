@@ -34,7 +34,7 @@ jobs:
       run: dotnet build Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --no-restore
 
     - name: Publish
-      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained false --runtime win-x64
+      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained false --runtime win-x64 --no-restore -p:PublishTrimmed=false -p:PublishSingleFile=false -p:DebugType=None -p:DebugSymbols=false
 
     - name: Copy required files and folders
       run: |
@@ -48,16 +48,41 @@ jobs:
         Copy-Item -Path "Luna-BGM-Library/games.json" -Destination "./publish/games.json" -Force
         
         # Remove unnecessary files to match local build
+        Write-Output "Before cleanup:"
+        $beforeSize = (Get-ChildItem "./publish" -File -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+        Write-Output "Total size: $([math]::Round($beforeSize, 2)) MB"
+        
         $unnecessaryFiles = @(
-            "*.pdb",
-            "*.xml",
-            "*.deps.json",
-            "*.runtimeconfig.dev.json"
+            "*.pdb",           # Debug symbols
+            "*.xml",           # XML documentation
+            "*.deps.json",     # Dependency files (keep main one)
+            "*.runtimeconfig.dev.json",  # Dev config
+            "**/ref/*",        # Reference assemblies
+            "**/runtimes/linux*/**",     # Linux runtime
+            "**/runtimes/osx*/**",       # macOS runtime
+            "**/runtimes/unix/**",       # Unix runtime
+            "**/runtimes/browser/**",    # Browser runtime
+            "**/System.Drawing.Common.dll",  # Often duplicated
+            "**/Microsoft.Win32.SystemEvents.dll"  # Often duplicated
         )
         
         foreach ($pattern in $unnecessaryFiles) {
-            Get-ChildItem "./publish" -Filter $pattern -Recurse | Remove-Item -Force
+            $files = Get-ChildItem "./publish" -Path $pattern -Recurse -ErrorAction SilentlyContinue
+            if ($files) {
+                Write-Output "Removing: $pattern ($($files.Count) files)"
+                $files | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+            }
         }
+        
+        # Keep only essential runtimeconfig.json
+        Get-ChildItem "./publish" -Filter "*.runtimeconfig.json" | Where-Object { 
+            $_.Name -ne "Luna-BGM-Library.runtimeconfig.json" 
+        } | Remove-Item -Force -ErrorAction SilentlyContinue
+        
+        Write-Output "After cleanup:"
+        $afterSize = (Get-ChildItem "./publish" -File -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+        Write-Output "Total size: $([math]::Round($afterSize, 2)) MB"
+        Write-Output "Size reduction: $([math]::Round($beforeSize - $afterSize, 2)) MB"
         
         Write-Output "Required files and folders copied to publish directory"
         Write-Output "File count: $(Get-ChildItem './publish' -File -Recurse | Measure-Object | Select-Object -ExpandProperty Count)"
