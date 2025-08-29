@@ -34,7 +34,35 @@ jobs:
       run: dotnet build Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --no-restore
 
     - name: Publish
-      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained true --runtime win-x64
+      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained false --runtime win-x64
+
+    - name: Copy required files and folders
+      run: |
+        # Create required empty folders
+        New-Item -ItemType Directory -Path "./publish/BGM" -Force
+        New-Item -ItemType Directory -Path "./publish/download" -Force
+        New-Item -ItemType Directory -Path "./publish/PCK" -Force
+        
+        # Copy Tools folder and games.json from source
+        Copy-Item -Path "Luna-BGM-Library/Tools" -Destination "./publish/Tools" -Recurse -Force
+        Copy-Item -Path "Luna-BGM-Library/games.json" -Destination "./publish/games.json" -Force
+        
+        # Remove unnecessary files to match local build
+        $unnecessaryFiles = @(
+            "*.pdb",
+            "*.xml",
+            "*.deps.json",
+            "*.runtimeconfig.dev.json"
+        )
+        
+        foreach ($pattern in $unnecessaryFiles) {
+            Get-ChildItem "./publish" -Filter $pattern -Recurse | Remove-Item -Force
+        }
+        
+        Write-Output "Required files and folders copied to publish directory"
+        Write-Output "File count: $(Get-ChildItem './publish' -File -Recurse | Measure-Object | Select-Object -ExpandProperty Count)"
+        Get-ChildItem "./publish" -Directory | ForEach-Object { Write-Output "Directory: $($_.Name)" }
+        Get-ChildItem "./publish" -File | Where-Object { $_.Name -eq "games.json" } | ForEach-Object { Write-Output "File: $($_.Name)" }
 
     - name: Get latest release version
       id: get_version
@@ -109,6 +137,7 @@ jobs:
                     
           ## Requirements
           - Microsoft .NET 8.0 Runtime (Windows x64)
+          - Download from: https://dotnet.microsoft.com/download/dotnet/8.0
         files: |
           Luna-BGM-Library-${{ steps.get_version.outputs.NEW_VERSION }}.zip
         draft: false
