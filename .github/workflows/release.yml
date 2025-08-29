@@ -1,0 +1,106 @@
+name: Auto Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore Luna-BGM-Library/Luna-BGM-Library.csproj
+
+    - name: Build
+      run: dotnet build Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained true --runtime win-x64
+
+    - name: Get latest release version
+      id: get_version
+      run: |
+        $latestRelease = gh api repos/${{ github.repository }}/releases/latest 2>$null
+        if ($LASTEXITCODE -eq 0) {
+          $currentVersion = ($latestRelease | ConvertFrom-Json).tag_name
+          Write-Output "Current version: $currentVersion"
+          
+          # Extract version number and increment
+          if ($currentVersion -match 'v_(\d+)\.(\d+)') {
+            $major = [int]$matches[1]
+            $minor = [int]$matches[2]
+            $newMinor = $minor + 1
+            $newVersion = "v_$major.$newMinor"
+          } else {
+            $newVersion = "v_1.6"
+          }
+        } else {
+          Write-Output "No previous releases found, starting with v_1.6"
+          $newVersion = "v_1.6"
+        }
+        Write-Output "New version: $newVersion"
+        echo "NEW_VERSION=$newVersion" >> $env:GITHUB_OUTPUT
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create ZIP archive
+      run: |
+        Compress-Archive -Path ./publish/* -DestinationPath "Luna-BGM-Library-${{ steps.get_version.outputs.NEW_VERSION }}.zip"
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.NEW_VERSION }}
+        name: Release ${{ steps.get_version.outputs.NEW_VERSION }}
+        body: |
+          Automated build and release ${{ steps.get_version.outputs.NEW_VERSION }}
+          
+          ## Changes
+          - Automated build based on latest commit
+                    
+          ## Requirements
+          - Microsoft .NET 8.0 Runtime (Windows x64)
+        files: |
+          Luna-BGM-Library-${{ steps.get_version.outputs.NEW_VERSION }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-only:
+    runs-on: windows-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore Luna-BGM-Library/Luna-BGM-Library.csproj
+
+    - name: Build
+      run: dotnet build Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --no-restore
+
+    - name: Test build
+      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./test-publish --self-contained true --runtime win-x64
