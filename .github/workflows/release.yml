@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  
 jobs:
   build-and-release:
     runs-on: windows-latest
@@ -64,7 +67,7 @@ jobs:
         Compress-Archive -Path ./publish/* -DestinationPath "Luna-BGM-Library-${{ steps.get_version.outputs.NEW_VERSION }}.zip"
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.get_version.outputs.NEW_VERSION }}
         name: Release ${{ steps.get_version.outputs.NEW_VERSION }}
@@ -80,8 +83,7 @@ jobs:
           Luna-BGM-Library-${{ steps.get_version.outputs.NEW_VERSION }}.zip
         draft: false
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   build-only:
     runs-on: windows-latest
