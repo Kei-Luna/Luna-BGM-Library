@@ -62,6 +62,36 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Get commit messages since last release
+      id: get_commits
+      run: |
+        $latestRelease = gh api repos/${{ github.repository }}/releases/latest 2>$null
+        if ($LASTEXITCODE -eq 0) {
+          $lastReleaseTag = ($latestRelease | ConvertFrom-Json).tag_name
+          Write-Output "Getting commits since $lastReleaseTag"
+          $commits = git log --pretty=format:"- %s (%h)" $lastReleaseTag..HEAD
+        } else {
+          Write-Output "No previous release found, getting recent commits"
+          $commits = git log --pretty=format:"- %s (%h)" -10
+        }
+        
+        if ([string]::IsNullOrWhiteSpace($commits)) {
+          $commits = "- Initial release"
+        }
+        
+        # Convert to multiline string for GitHub output
+        $commits = $commits -join "`n"
+        Write-Output "Commits:"
+        Write-Output $commits
+        
+        # Use here-string to handle multiline content
+        $delimiter = "EOF_COMMITS_$(Get-Random)"
+        echo "COMMITS<<$delimiter" >> $env:GITHUB_OUTPUT
+        echo "$commits" >> $env:GITHUB_OUTPUT
+        echo "$delimiter" >> $env:GITHUB_OUTPUT
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create ZIP archive
       run: |
         Compress-Archive -Path ./publish/* -DestinationPath "Luna-BGM-Library-${{ steps.get_version.outputs.NEW_VERSION }}.zip"
@@ -75,7 +105,7 @@ jobs:
           Automated build and release ${{ steps.get_version.outputs.NEW_VERSION }}
           
           ## Changes
-          - Automated build based on latest commit
+          ${{ steps.get_commits.outputs.COMMITS }}
                     
           ## Requirements
           - Microsoft .NET 8.0 Runtime (Windows x64)
