@@ -10,7 +10,7 @@ namespace LunaBgmLibrary.Services
 {
     public static class PlaylistService
     {
-        private static readonly string[] Supported = new[] { ".mp3", ".wav", ".flac" };
+        private static readonly string[] Supported = new[] { ".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".wma", ".aac", ".mp4", ".m4a" };
 
         public static ObservableCollection<TrackInfo> LoadFromFolder(string bgmRoot, string? relativeSubdir = null)
         {

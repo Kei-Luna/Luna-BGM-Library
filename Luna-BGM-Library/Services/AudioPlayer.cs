@@ -1,6 +1,7 @@
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using NAudio.Vorbis;
 using System;
 using System.IO;
 using System.Threading;
@@ -14,6 +15,7 @@ namespace LunaBgmLibrary.Services
         private IWavePlayer? _output;
         private MediaFoundationReader? _mfReader;
         private AudioFileReader? _afReader;
+        private VorbisWaveReader? _vorbisReader;
 
         private ISampleProvider? _currentProvider;
         private EqualizerSampleProvider? _eqProvider;
@@ -34,12 +36,14 @@ namespace LunaBgmLibrary.Services
             {
                 if (_mfReader != null) return _mfReader.CurrentTime;
                 if (_afReader != null) return _afReader.CurrentTime;
+                if (_vorbisReader != null) return _vorbisReader.CurrentTime;
                 return TimeSpan.Zero;
             }
             set
             {
                 if (_mfReader != null) _mfReader.CurrentTime = value;
                 if (_afReader != null) _afReader.CurrentTime = value;
+                if (_vorbisReader != null) _vorbisReader.CurrentTime = value;
             }
         }
 
@@ -49,6 +53,7 @@ namespace LunaBgmLibrary.Services
             {
                 if (_mfReader != null) return _mfReader.TotalTime;
                 if (_afReader != null) return _afReader.TotalTime;
+                if (_vorbisReader != null) return _vorbisReader.TotalTime;
                 return TimeSpan.Zero;
             }
         }
@@ -63,6 +68,7 @@ namespace LunaBgmLibrary.Services
 
                 _afReader?.Dispose(); _afReader = null;
                 _mfReader?.Dispose(); _mfReader = null;
+                _vorbisReader?.Dispose(); _vorbisReader = null;
 
                 _volumeProvider = null;
                 _eqProvider = null;
@@ -98,6 +104,7 @@ namespace LunaBgmLibrary.Services
             IWavePlayer? newOutput = null;
             MediaFoundationReader? newMf = null;
             AudioFileReader? newAf = null;
+            VorbisWaveReader? newVorbis = null;
             ISampleProvider? newProvider = null;
             EqualizerSampleProvider? newEq = null;
             VolumeSampleProvider? newVol = null;
@@ -108,7 +115,12 @@ namespace LunaBgmLibrary.Services
 
                 try
                 {
-                    if (ext == ".mp3" || ext == ".wav" || ext == ".aiff" || ext == ".aif")
+                    if (ext == ".ogg")
+                    {
+                        newVorbis = new VorbisWaveReader(filePath);
+                        newProvider = newVorbis.ToSampleProvider();
+                    }
+                    else if (ext == ".mp3" || ext == ".wav" || ext == ".aiff" || ext == ".aif" || ext == ".flac" || ext == ".wma" || ext == ".aac" || ext == ".mp4" || ext == ".m4a")
                     {
                         newAf = new AudioFileReader(filePath);
                         newProvider = newAf.ToSampleProvider();
@@ -125,9 +137,18 @@ namespace LunaBgmLibrary.Services
                     {
                         newMf?.Dispose(); newMf = null;
                         newAf?.Dispose(); newAf = null;
+                        newVorbis?.Dispose(); newVorbis = null;
 
-                        newMf = new MediaFoundationReader(filePath);
-                        newProvider = newMf.ToSampleProvider();
+                        if (ext == ".ogg")
+                        {
+                            newVorbis = new VorbisWaveReader(filePath);
+                            newProvider = newVorbis.ToSampleProvider();
+                        }
+                        else
+                        {
+                            newMf = new MediaFoundationReader(filePath);
+                            newProvider = newMf.ToSampleProvider();
+                        }
                     }
                     catch
                     {
@@ -176,10 +197,12 @@ namespace LunaBgmLibrary.Services
                 _output?.Dispose(); _output = null;
                 _afReader?.Dispose(); _afReader = null;
                 _mfReader?.Dispose(); _mfReader = null;
+                _vorbisReader?.Dispose(); _vorbisReader = null;
 
                 _output = newOutput; newOutput = null;
                 _afReader = newAf; newAf = null;
                 _mfReader = newMf; newMf = null;
+                _vorbisReader = newVorbis; newVorbis = null;
                 _eqProvider = newEq; newEq = null;
                 _volumeProvider = newVol; newVol = null;
                 _currentProvider = _volumeProvider;
@@ -196,6 +219,7 @@ namespace LunaBgmLibrary.Services
                 newOutput?.Dispose();
                 newAf?.Dispose();
                 newMf?.Dispose();
+                newVorbis?.Dispose();
                 _gate.Release();
             }
         }
