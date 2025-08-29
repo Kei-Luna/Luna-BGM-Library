@@ -28,13 +28,13 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore Luna-BGM-Library/Luna-BGM-Library.csproj
+      run: dotnet restore Luna-BGM-Library/Luna-BGM-Library.csproj --runtime win-x64
 
     - name: Build
       run: dotnet build Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --no-restore
 
     - name: Publish
-      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained false --runtime win-x64 --no-restore -p:PublishTrimmed=false -p:PublishSingleFile=false -p:DebugType=None -p:DebugSymbols=false
+      run: dotnet publish Luna-BGM-Library/Luna-BGM-Library.csproj --configuration Release --output ./publish --self-contained false --runtime win-x64 -p:DebugType=None -p:DebugSymbols=false
 
     - name: Copy required files and folders
       run: |
