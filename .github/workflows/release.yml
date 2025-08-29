@@ -93,24 +93,39 @@ jobs:
     - name: Get commit messages since last release
       id: get_commits
       run: |
-        $latestRelease = gh api repos/${{ github.repository }}/releases/latest 2>$null
-        if ($LASTEXITCODE -eq 0) {
-          $lastReleaseTag = ($latestRelease | ConvertFrom-Json).tag_name
-          Write-Output "Getting commits since $lastReleaseTag"
-          $commits = git log --pretty=format:"- %s (%h)" $lastReleaseTag..HEAD
-        } else {
-          Write-Output "No previous release found, getting recent commits"
-          $commits = git log --pretty=format:"- %s (%h)" -10
+        try {
+          $latestRelease = gh api repos/${{ github.repository }}/releases/latest 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $lastReleaseTag = ($latestRelease | ConvertFrom-Json).tag_name
+            Write-Output "Getting commits since $lastReleaseTag"
+            $gitOutput = & git log --pretty=format:"- %s (%h)" "$lastReleaseTag..HEAD" 2>$null
+          } else {
+            Write-Output "No previous release found, getting recent commits"
+            $gitOutput = & git log --pretty=format:"- %s (%h)" -5 2>$null
+          }
+          
+          # Convert git output to array and filter out empty lines
+          $commitLines = @()
+          if ($gitOutput) {
+            $commitLines = $gitOutput | Where-Object { $_ -and $_.Trim() -ne "" }
+          }
+          
+          if ($commitLines.Count -eq 0) {
+            $commitLines = @("- Initial release or no new commits")
+          }
+          
+          # Join commits with newline
+          $commits = $commitLines -join "`n"
+          
+          Write-Output "Found $($commitLines.Count) commits:"
+          foreach ($line in $commitLines) {
+            Write-Output $line
+          }
+          
+        } catch {
+          Write-Output "Error getting commits: $($_.Exception.Message)"
+          $commits = "- Error retrieving commit history"
         }
-        
-        if ([string]::IsNullOrWhiteSpace($commits)) {
-          $commits = "- Initial release"
-        }
-        
-        # Convert to multiline string for GitHub output
-        $commits = $commits -join "`n"
-        Write-Output "Commits:"
-        Write-Output $commits
         
         # Use here-string to handle multiline content
         $delimiter = "EOF_COMMITS_$(Get-Random)"
