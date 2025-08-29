@@ -1,9 +1,11 @@
 using LunaBgmLibrary.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace LunaBgmLibrary.Services
@@ -11,8 +13,11 @@ namespace LunaBgmLibrary.Services
     public static class PlaylistService
     {
         private static readonly string[] Supported = new[] { ".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".wma", ".aac", ".mp4", ".m4a" };
+        
+        private static readonly ConcurrentDictionary<string, TrackInfo> _trackCache = new();
+        private static readonly ConcurrentDictionary<string, (DateTime lastModified, List<string> files)> _folderCache = new();
 
-        public static ObservableCollection<TrackInfo> LoadFromFolder(string bgmRoot, string? relativeSubdir = null)
+        public static async Task<ObservableCollection<TrackInfo>> LoadFromFolderAsync(string bgmRoot, string? relativeSubdir = null)
         {
             if (!Directory.Exists(bgmRoot))
                 Directory.CreateDirectory(bgmRoot);
@@ -22,17 +27,14 @@ namespace LunaBgmLibrary.Services
             
             if (relativeSubdir == null)
             {
-                // All folders - search all subdirectories recursively
                 searchOption = SearchOption.AllDirectories;
             }
             else if (relativeSubdir == "")
             {
-                // BGM root folder only - no subdirectories
                 searchOption = SearchOption.TopDirectoryOnly;
             }
             else
             {
-                // Specific subfolder - only files in that folder, no deeper subdirectories
                 var full = Path.GetFullPath(Path.Combine(bgmRoot, relativeSubdir));
                 var rootFull = Path.GetFullPath(bgmRoot) + Path.DirectorySeparatorChar;
                 if (!full.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase))
@@ -41,25 +43,45 @@ namespace LunaBgmLibrary.Services
                 searchOption = SearchOption.TopDirectoryOnly;
             }
 
-            var files = Directory.EnumerateFiles(
-                            searchRoot,
-                            "*.*",
-                            searchOption)
-                        .Where(f => Supported.Contains(Path.GetExtension(f).ToLowerInvariant()))
-                        .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-
-            var list = new List<TrackInfo>(files.Count);
-            foreach (var f in files)
+            var cacheKey = $"{searchRoot}:{searchOption}";
+            var lastWrite = Directory.GetLastWriteTime(searchRoot);
+            
+            List<string> files;
+            if (_folderCache.TryGetValue(cacheKey, out var cached) && cached.lastModified >= lastWrite)
             {
-                list.Add(ReadTrack(f));
+                files = cached.files;
+            }
+            else
+            {
+                files = await Task.Run(() => Directory.EnumerateFiles(searchRoot, "*.*", searchOption)
+                    .Where(f => Supported.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                    .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                    .ToList());
+                
+                _folderCache[cacheKey] = (lastWrite, files);
             }
 
-            var sorted = list.OrderBy(x => x.Track == 0 ? int.MaxValue : x.Track)
+            var tracks = await Task.Run(() => 
+            {
+                var list = new ConcurrentBag<TrackInfo>();
+                Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, f =>
+                {
+                    list.Add(ReadTrackCached(f));
+                });
+                return list.ToList();
+            });
+
+            var sorted = tracks.OrderBy(x => x.Track == 0 ? int.MaxValue : x.Track)
                              .ThenBy(x => x.FileName, StringComparer.OrdinalIgnoreCase)
                              .ToList();
 
             return new ObservableCollection<TrackInfo>(sorted);
+        }
+
+        [Obsolete("Use LoadFromFolderAsync for better performance")]
+        public static ObservableCollection<TrackInfo> LoadFromFolder(string bgmRoot, string? relativeSubdir = null)
+        {
+            return LoadFromFolderAsync(bgmRoot, relativeSubdir).GetAwaiter().GetResult();
         }
 
         public static List<string> GetRelativeFolders(string bgmRoot)
@@ -83,6 +105,32 @@ namespace LunaBgmLibrary.Services
             if (!full.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase))
                 return string.Empty;
             return full.Substring(rootFull.Length).Replace(Path.DirectorySeparatorChar, '/');
+        }
+
+        private static TrackInfo ReadTrackCached(string f)
+        {
+            var lastWrite = File.GetLastWriteTime(f);
+            var cacheKey = $"{f}:{lastWrite.Ticks}";
+            
+            if (_trackCache.TryGetValue(cacheKey, out var cached))
+            {
+                return cached;
+            }
+            
+            var track = ReadTrack(f);
+            
+            _trackCache.TryAdd(cacheKey, track);
+            
+            if (_trackCache.Count > 10000)
+            {
+                var oldKeys = _trackCache.Keys.Take(_trackCache.Count / 4).ToList();
+                foreach (var key in oldKeys)
+                {
+                    _trackCache.TryRemove(key, out _);
+                }
+            }
+            
+            return track;
         }
 
         private static TrackInfo ReadTrack(string f)

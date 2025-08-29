@@ -57,7 +57,7 @@ namespace LunaBgmLibrary
             FolderPicker.ItemsSource = _folderItems;
             RefreshFolderList(selectLabel: RootFolderLabel);
 
-            ReloadPlaylist();
+            _ = ReloadPlaylistAsync();
             PlaylistView.ItemsSource = _filtered;
 
             _watcher = new FileSystemWatcher(_bgmDir)
@@ -102,12 +102,12 @@ namespace LunaBgmLibrary
             _fswDebounce.Start();
         }
 
-        private void ReloadAllSafe()
+        private async void ReloadAllSafe()
         {
             try
             {
                 RefreshFolderList();
-                ReloadPlaylist();
+                await ReloadPlaylistAsync();
             }
             catch (Exception ex)
             {
@@ -142,15 +142,34 @@ namespace LunaBgmLibrary
                 FolderPicker.SelectedItem = RootFolderLabel;
         }
 
-        private void ReloadPlaylist()
+        private async Task ReloadPlaylistAsync()
         {
             var rel = GetSelectedRelativeFolderOrNull();
-            _allTracks = PlaylistService.LoadFromFolder(_bgmDir, rel);
-            _filtered = new ObservableCollection<TrackInfo>(_allTracks);
-            PlaylistView.ItemsSource = _filtered;
+            
+            PlaylistView.ItemsSource = null;
+            PlaylistView.Items.Clear();
+            
+            try
+            {
+                _allTracks = await PlaylistService.LoadFromFolderAsync(_bgmDir, rel);
+                _filtered = new ObservableCollection<TrackInfo>(_allTracks);
+                PlaylistView.ItemsSource = _filtered;
 
-            if (_currentAllIndex >= _allTracks.Count)
-                _currentAllIndex = _allTracks.Count - 1;
+                if (_currentAllIndex >= _allTracks.Count)
+                    _currentAllIndex = _allTracks.Count - 1;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading playlist: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _allTracks = new ObservableCollection<TrackInfo>();
+                _filtered = new ObservableCollection<TrackInfo>();
+                PlaylistView.ItemsSource = _filtered;
+            }
+        }
+
+        private void ReloadPlaylist()
+        {
+            _ = ReloadPlaylistAsync();
         }
 
         private async void FolderPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -164,7 +183,7 @@ namespace LunaBgmLibrary
             }
             catch {}
 
-            ReloadPlaylist();
+            await ReloadPlaylistAsync();
         }
 
         private async void TrackItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -473,15 +492,24 @@ namespace LunaBgmLibrary
             }
         }
 
-        private void DownloadButton_Click(object sender, RoutedEventArgs e)
+        private async void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new DownloadWindow(_bgmDir) { Owner = this };
-            if (dlg.ShowDialog() == true)
+            _watcher.EnableRaisingEvents = false;
+            
+            try
             {
-                RefreshFolderList();
-                ReloadPlaylist();
-                MessageBox.Show("BGM files downloaded successfully!", "Download Complete", 
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                var dlg = new DownloadWindow(_bgmDir) { Owner = this };
+                if (dlg.ShowDialog() == true)
+                {
+                    RefreshFolderList();
+                    await ReloadPlaylistAsync();
+                    MessageBox.Show("BGM files downloaded successfully!", "Download Complete", 
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            finally
+            {
+                _watcher.EnableRaisingEvents = true;
             }
         }
 
