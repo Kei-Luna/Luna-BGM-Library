@@ -18,6 +18,7 @@ Zenless Zone Zero
 Azur Promilia  
 Fate Trigger  
 Honkai Impact 3  
+Arcaea  
 
 
 ## Requirements
