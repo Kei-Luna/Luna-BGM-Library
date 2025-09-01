@@ -93,7 +93,7 @@
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/v_1.0/Fate-Trigger.7z"
       ]
     },
-        {
+    {
       "name": "Arcaea_v6.7",
       "downloadUrls": [
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/arc_6.7/Arcaea_v6.7.7z.001",
@@ -108,6 +108,12 @@
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/arc_6.7/Arcaea_v6.7.7z.010",
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/arc_6.7/Arcaea_v6.7.7z.011",
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/arc_6.7/Arcaea_v6.7.7z.012"
+      ]
+    },
+    {
+      "name": "Blue-Archive_v1.60.365091",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ba_1.60.365091/Blue-Archive_v1.60.365091.7z"
       ]
     }
   ]

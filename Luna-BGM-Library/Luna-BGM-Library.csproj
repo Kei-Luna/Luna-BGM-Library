@@ -28,5 +28,6 @@
 
   <Target Name="CreatePCKFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)PCK" />
+    <MakeDir Directories="$(OutputPath)BGM" />
   </Target>
 </Project>
