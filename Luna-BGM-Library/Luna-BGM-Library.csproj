@@ -62,4 +62,9 @@
       Overwrite="true"
       Lines="@(_VersionSource-&gt;'%(Line)')" />
   </Target>
+  <ItemGroup>
+    <Resource Include="Asset\Equalizer.png" />
+    <Resource Include="Asset\Download.png" />
+    <Resource Include="Asset\Unpack.png" />
+  </ItemGroup>
 </Project>
