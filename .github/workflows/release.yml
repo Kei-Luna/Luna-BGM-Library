@@ -3,7 +3,7 @@ name: Auto Build and Release
 on:
   push:
     paths:
-      - 'Version.txt'
+      - 'Luna-BGM-Library/Version.txt'
     branches:
       - main
   pull_request:
@@ -94,7 +94,7 @@ jobs:
     - name: Get version from Version.txt file
       id: get_version
       run: |
-        $version = Get-Content -Path "Version.txt" -Raw | ForEach-Object { $_.Trim() }
+        $version = Get-Content -Path "Luna-BGM-Library/Version.txt" -Raw | ForEach-Object { $_.Trim() }
         Write-Output "Version from file: $version"
         echo "NEW_VERSION=$version" >> $env:GITHUB_OUTPUT
 

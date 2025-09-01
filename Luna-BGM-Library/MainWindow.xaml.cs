@@ -15,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using LunaBgmLibrary.Utilities;
 
 namespace LunaBgmLibrary
 {
@@ -79,6 +80,7 @@ namespace LunaBgmLibrary
             _positionTimer.Start();
 
             this.PreviewKeyDown += MainWindow_PreviewKeyDown;
+            this.Loaded += MainWindow_Loaded;
 
             try
             {
@@ -94,6 +96,52 @@ namespace LunaBgmLibrary
                 if (_settings.EqBands != null)
                     _player.SetEqualizerBands(_settings.EqBands);
             }
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                VersionLabel.Text = VersionUtil.GetLocalVersionDisplay();
+            }
+            catch { }
+
+            // Check for updates in the background
+            try
+            {
+                using var cts = new CancellationTokenSource(15000); // 15s timeout
+                var info = await UpdateService.CheckForUpdateAsync(cts.Token);
+                if (info.HasUpdate)
+                {
+                    var msg = $"A new version {info.LatestVersion} is available.\nDownload and install now?";
+                    var r = MessageBox.Show(msg, "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (r == MessageBoxResult.Yes)
+                    {
+                        var progress = new Progress<double>(p =>
+                        {
+                            try
+                            {
+                                StatusText.Visibility = Visibility.Visible;
+                                StatusText.Text = $"Downloading update... {p:0}%";
+                            }
+                            catch { }
+                        });
+
+                        using var dlCts = new CancellationTokenSource();
+                        var started = await UpdateService.DownloadAndStartUpdateAsync(info, progress, dlCts.Token);
+                        if (started)
+                        {
+                            Application.Current.Shutdown();
+                            return;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to start the update.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void OnFsChanged(object? s, FileSystemEventArgs e)

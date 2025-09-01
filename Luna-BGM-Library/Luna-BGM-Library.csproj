@@ -30,4 +30,36 @@
     <MakeDir Directories="$(OutputPath)PCK" />
     <MakeDir Directories="$(OutputPath)BGM" />
   </Target>
+  
+  <!-- Generate a small source file with the version string from Version.txt -->
+  <Target Name="GenerateVersionSource" BeforeTargets="CoreCompile">
+    <ReadLinesFromFile File="Version.txt">
+      <Output TaskParameter="Lines" ItemName="VerLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <VersionRaw>@(VerLines)</VersionRaw>
+    </PropertyGroup>
+    <MakeDir Directories="$(MSBuildProjectDirectory)\Generated" />
+    <ItemGroup>
+      <_VersionSource Include="1">
+        <Line>namespace LunaBgmLibrary {</Line>
+      </_VersionSource>
+      <_VersionSource Include="2">
+        <Line>    public static class BuildInfo {</Line>
+      </_VersionSource>
+      <_VersionSource Include="3">
+        <Line>        public const string VersionRaw = "$(VersionRaw)";</Line>
+      </_VersionSource>
+      <_VersionSource Include="4">
+        <Line>    }</Line>
+      </_VersionSource>
+      <_VersionSource Include="5">
+        <Line>}</Line>
+      </_VersionSource>
+    </ItemGroup>
+    <WriteLinesToFile
+      File="$(MSBuildProjectDirectory)\Generated\VersionInfo.g.cs"
+      Overwrite="true"
+      Lines="@(_VersionSource-&gt;'%(Line)')" />
+  </Target>
 </Project>
