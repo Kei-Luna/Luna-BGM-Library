@@ -2,6 +2,8 @@ name: Auto Build and Release
 
 on:
   push:
+    paths:
+      - 'Version.txt'
     branches:
       - main
   pull_request:
@@ -89,31 +91,12 @@ jobs:
         Get-ChildItem "./publish" -Directory | ForEach-Object { Write-Output "Directory: $($_.Name)" }
         Get-ChildItem "./publish" -File | Where-Object { $_.Name -eq "games.json" } | ForEach-Object { Write-Output "File: $($_.Name)" }
 
-    - name: Get latest release version
+    - name: Get version from Version.txt file
       id: get_version
       run: |
-        $latestRelease = gh api repos/${{ github.repository }}/releases/latest 2>$null
-        if ($LASTEXITCODE -eq 0) {
-          $currentVersion = ($latestRelease | ConvertFrom-Json).tag_name
-          Write-Output "Current version: $currentVersion"
-          
-          # Extract version number and increment
-          if ($currentVersion -match 'v_(\d+)\.(\d+)') {
-            $major = [int]$matches[1]
-            $minor = [int]$matches[2]
-            $newMinor = $minor + 1
-            $newVersion = "v_$major.$newMinor"
-          } else {
-            $newVersion = "v_1.6"
-          }
-        } else {
-          Write-Output "No previous releases found, starting with v_1.6"
-          $newVersion = "v_1.6"
-        }
-        Write-Output "New version: $newVersion"
-        echo "NEW_VERSION=$newVersion" >> $env:GITHUB_OUTPUT
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        $version = Get-Content -Path "Version.txt" -Raw | ForEach-Object { $_.Trim() }
+        Write-Output "Version from file: $version"
+        echo "NEW_VERSION=$version" >> $env:GITHUB_OUTPUT
 
     - name: Get commit messages since last release
       id: get_commits
