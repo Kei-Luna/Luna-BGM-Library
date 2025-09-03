@@ -115,6 +115,12 @@
       "downloadUrls": [
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ba_1.60.365091/Blue-Archive_v1.60.365091.7z"
       ]
+    },
+    {
+      "name": "Touhou-Danmaku-Kagura_v1.10.1",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/tdk_1.10.1/Touhou-Danmaku-Kagura_1.10.1.7z"
+      ]
     }
   ]
 }
