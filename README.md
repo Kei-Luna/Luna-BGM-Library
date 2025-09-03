@@ -21,6 +21,7 @@ Honkai Impact 3
 Arcaea  
 Wuthering Waves  
 Blue Archive  
+Touhou Danmaku Kagura Phantasia Lost  
 
 
 ## Requirements
