@@ -26,7 +26,7 @@ namespace LunaBgmLibrary
 
         private readonly string _bgmDir;
         private readonly AudioPlayer _player = new AudioPlayer();
-        private readonly SpectrumAnalyzer _spectrumAnalyzer = new SpectrumAnalyzer(128, 8192);
+        private readonly SpectrumAnalyzer _spectrumAnalyzer = new SpectrumAnalyzer(32, 8192);
         private ObservableCollection<TrackInfo> _allTracks = new();
         private ObservableCollection<TrackInfo> _filtered = new();
 

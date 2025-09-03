@@ -90,44 +90,67 @@ namespace LunaBgmLibrary.Services
 
         private void ConvertToSpectrum(int sampleRate)
         {
+            // Build higher-contrast bands by aggregating over log-spaced ranges
             int bins = _fftLength / 2;
             float binWidth = (float)sampleRate / _fftLength;
-            
-            for (int i = 0; i < SpectrumBands; i++)
+
+            float minFreq = 50.0f;
+            float maxFreq = Math.Min(sampleRate / 2f, 20000.0f);
+
+            for (int band = 0; band < SpectrumBands; band++)
             {
-                float freq = GetFrequencyForBand(i);
-                int binIndex = (int)(freq / binWidth);
-                
-                if (binIndex < bins)
+                float f1 = GetFrequencyForEdge(band, SpectrumBands, minFreq, maxFreq);
+                float f2 = GetFrequencyForEdge(band + 1, SpectrumBands, minFreq, maxFreq);
+
+                int start = Math.Max(1, (int)Math.Floor(f1 / binWidth));
+                int end = Math.Min(bins - 1, Math.Max(start + 1, (int)Math.Ceiling(f2 / binWidth)));
+
+                double peak = 0.0;
+                double sumSq = 0.0;
+                int count = 0;
+
+                for (int i = start; i < end; i++)
                 {
-                    float magnitude = GetMagnitude(binIndex);
-                    _spectrumData[i] = Math.Min(1.0f, magnitude * 2.0f);
+                    double real = _fftBuffer[i].X;
+                    double imag = _fftBuffer[i].Y;
+                    double mag = Math.Sqrt(real * real + imag * imag);
+                    peak = Math.Max(peak, mag);
+                    sumSq += mag * mag;
+                    count++;
+                }
+
+                double rms = count > 0 ? Math.Sqrt(sumSq / count) : 0.0;
+                double value = 0.75 * peak + 0.25 * rms; // stronger peak emphasis
+
+                // Perceptual/log mapping 0..1 (raise constant to push small values lower)
+                double vLog = Math.Log10(1.0 + 25.0 * value) / Math.Log10(26.0);
+
+                // Expand dynamic range: small smaller, large larger
+                float v = (float)Math.Pow(Math.Clamp(vLog, 0.0, 1.0), 1.70f);
+
+                // Additional soft floor to reduce small lobes further without affecting peaks
+                const float floor = 0.18f;  // below this level, attenuate strongly
+                if (v < floor)
+                {
+                    v *= 0.28f; // push very small energies lower but not to zero
                 }
                 else
                 {
-                    _spectrumData[i] = 0.0f;
+                    float t = (v - floor) / (1f - floor); // remap to 0..1
+                    v = (float)Math.Pow(Math.Clamp(t, 0f, 1f), 1.25f); // gentle shaping above floor
                 }
+
+                _spectrumData[band] = Math.Clamp(v, 0f, 1f);
             }
         }
 
-        private float GetFrequencyForBand(int band)
+        private static float GetFrequencyForEdge(int edgeIndex, int bands, float minFreq, float maxFreq)
         {
-            float minFreq = 250.0f;
-            float maxFreq = 20000.0f;
+            // Log-spaced edges including both ends
             float logMin = (float)Math.Log10(minFreq);
             float logMax = (float)Math.Log10(maxFreq);
-            float logRange = logMax - logMin;
-            
-            return (float)Math.Pow(10, logMin + (logRange * band / (SpectrumBands - 1)));
-        }
-
-        private float GetMagnitude(int binIndex)
-        {
-            if (binIndex >= _fftBuffer.Length) return 0.0f;
-            
-            float real = _fftBuffer[binIndex].X;
-            float imag = _fftBuffer[binIndex].Y;
-            return (float)Math.Sqrt(real * real + imag * imag);
+            float t = Math.Clamp(edgeIndex / (float)bands, 0f, 1f);
+            return (float)Math.Pow(10, logMin + (logMax - logMin) * t);
         }
 
         private void ApplySmoothing()
