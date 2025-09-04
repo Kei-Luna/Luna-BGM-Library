@@ -12,12 +12,7 @@ If there are any features or BGM you would like to add, please contact me.
 
 ## Demo
 
-<video src="https://raw.githubusercontent.com/Kei-Luna/Luna-BGM-Library/main/demo/demo.mp4" controls width="720">
-  Your browser does not support the video tag.
-  You can download or watch the demo at
-  <a href="https://github.com/Kei-Luna/Luna-BGM-Library/blob/main/demo/demo.mp4">this link</a>.
-</video>
-
+https://github.com/Kei-Luna/Luna-BGM-Library/blob/main/demo/demo.mp4
 
 ## BGM downloads List
 
@@ -36,6 +31,5 @@ Touhou Danmaku Kagura Phantasia Lost
 ## Requirements
 
 This application requires the Microsoft [.NET 8.0](https://dotnet.microsoft.com/download/dotnet/8.0).
-
 
 
