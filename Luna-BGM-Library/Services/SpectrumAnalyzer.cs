@@ -1,6 +1,7 @@
 using NAudio.Dsp;
 using NAudio.Wave;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace LunaBgmLibrary.Services
 {
@@ -11,6 +12,16 @@ namespace LunaBgmLibrary.Services
         private readonly Complex[] _fftBuffer;
         private readonly float[] _spectrumData;
         private readonly float[] _smoothedData;
+        
+        private const int WebDataSize = 256;
+        private const int WebLowpassRadius = 14;
+        private readonly double[] _webFir;
+        private readonly double[] _webWindow;
+        private float[] _webPrevSpectrum = new float[WebDataSize / 2];
+        private float[] _history;
+        private int _historyWrite;
+        private long _historyTotal;
+        private int _historyCapacity;
         private volatile bool _enabled;
 
         public event EventHandler<SpectrumEventArgs>? SpectrumUpdated;
@@ -30,6 +41,11 @@ namespace LunaBgmLibrary.Services
             _spectrumData = new float[SpectrumBands];
             _smoothedData = new float[SpectrumBands];
             _enabled = true;
+
+            _webFir = BuildGaussianFir(WebLowpassRadius, 50.0);
+            _webWindow = BuildBlackman(WebDataSize);
+            _historyCapacity = 0;
+            _history = Array.Empty<float>();
         }
 
         public void ProcessSamples(float[] samples, WaveFormat format)
@@ -40,12 +56,12 @@ namespace LunaBgmLibrary.Services
             {
                 try
                 {
-                    PrepareFFTBuffer(samples, format);
-                    PerformFFT();
-                    ConvertToSpectrum(format.SampleRate);
-                    ApplySmoothing();
-                    
-                    SpectrumUpdated?.Invoke(this, new SpectrumEventArgs(_smoothedData));
+                    AppendToHistory(samples, format);
+
+                    if (ComputeWebSpectrum(format.SampleRate))
+                    {
+                        SpectrumUpdated?.Invoke(this, new SpectrumEventArgs(_smoothedData));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -53,114 +69,208 @@ namespace LunaBgmLibrary.Services
                 }
             }
         }
-
-        private void PrepareFFTBuffer(float[] samples, WaveFormat format)
+        
+        private void AppendToHistory(float[] samples, WaveFormat format)
         {
-            Array.Clear(_fftBuffer, 0, _fftBuffer.Length);
-            int samplesToProcess = Math.Min(samples.Length, _fftLength);
+            int channels = Math.Max(1, format.Channels);
+            EnsureHistoryCapacity(format.SampleRate);
 
-            if (format.Channels == 2)
+            if (channels == 1)
             {
-                for (int i = 0; i < samplesToProcess / 2 && i < _fftLength; i++)
+                for (int i = 0; i < samples.Length; i++)
                 {
-                    float mono = (samples[i * 2] + samples[i * 2 + 1]) * 0.5f;
-                    _fftBuffer[i].X = mono * GetWindow(i, samplesToProcess / 2);
-                    _fftBuffer[i].Y = 0;
+                    _history[_historyWrite] = samples[i];
+                    _historyWrite = (_historyWrite + 1) % _historyCapacity;
+                    _historyTotal++;
                 }
             }
             else
             {
-                for (int i = 0; i < samplesToProcess && i < _fftLength; i++)
+                for (int i = 0; i < samples.Length; i += channels)
                 {
-                    _fftBuffer[i].X = samples[i] * GetWindow(i, samplesToProcess);
-                    _fftBuffer[i].Y = 0;
+                    float sum = samples[i];
+                    sum += (i + 1 < samples.Length ? samples[i + 1] : 0f);
+                    float mono = sum * 0.5f;
+                    _history[_historyWrite] = mono;
+                    _historyWrite = (_historyWrite + 1) % _historyCapacity;
+                    _historyTotal++;
                 }
             }
         }
 
-        private void PerformFFT()
+        private void EnsureHistoryCapacity(int sampleRate)
         {
-            FastFourierTransform.FFT(true, (int)Math.Log(_fftLength, 2.0), _fftBuffer);
+            int skip = Math.Max(1, (int)Math.Round(40.0 * sampleRate / 44100.0));
+            int span = (WebDataSize - 1) * skip + (WebLowpassRadius * 4) + 1;
+            int minCapacity = Math.Max(span + 1024, sampleRate * 2);
+
+            if (minCapacity > _historyCapacity)
+            {
+                _historyCapacity = NextPowerOfTwo(minCapacity);
+                _history = new float[_historyCapacity];
+                _historyWrite = 0;
+                _historyTotal = 0;
+            }
         }
 
-        private float GetWindow(int i, int length)
+        private bool ComputeWebSpectrum(int sampleRate)
         {
-            return (float)(0.5 - 0.5 * Math.Cos(2 * Math.PI * i / (length - 1)));
-        }
+            if (_historyCapacity == 0 || _historyTotal < 1) return false;
 
-        private void ConvertToSpectrum(int sampleRate)
-        {
-            // Build higher-contrast bands by aggregating over log-spaced ranges
-            int bins = _fftLength / 2;
-            float binWidth = (float)sampleRate / _fftLength;
+            int skip = Math.Max(1, (int)Math.Round(40.0 * sampleRate / 44100.0));
+            long presentAbs = _historyTotal - 1;
+            long baseIndexAbs = presentAbs - (WebDataSize - 1L) * skip - (2L * WebLowpassRadius);
 
+            long earliestNeeded = baseIndexAbs - (2L * WebLowpassRadius);
+            long earliestHave = _historyTotal - Math.Min(_historyCapacity, (int)_historyTotal);
+            if (earliestNeeded < earliestHave)
+            {
+                return false;
+            }
+
+            Span<float> timeData = stackalloc float[WebDataSize];
+            for (int i = 0; i < WebDataSize; i++)
+            {
+                long idx = baseIndexAbs + (long)i * skip;
+                double v = LowpassAt(idx);
+                timeData[i] = (float)(v * _webWindow[i]);
+            }
+
+            Complex[] buf = new Complex[WebDataSize];
+            for (int i = 0; i < WebDataSize; i++)
+            {
+                buf[i].X = timeData[i];
+                buf[i].Y = 0f;
+            }
+            FastFourierTransform.FFT(true, (int)Math.Log(WebDataSize, 2.0), buf);
+
+            int half = WebDataSize / 2;
+            float[] halfMag = new float[half];
+            double norm = 2.0 / WebDataSize;
+            for (int i = 0; i < half; i++)
+            {
+                double re = buf[i].X;
+                double im = buf[i].Y;
+                double mag = Math.Sqrt(re * re + im * im) * norm;
+                float cur = (float)mag;
+                halfMag[i] = 0.5f * (cur + _webPrevSpectrum[i]);
+                _webPrevSpectrum[i] = cur;
+            }
+
+            int bins = half;
+            float effectiveSampleRate = (float)sampleRate / skip;
+            float binWidth = effectiveSampleRate / WebDataSize;
             float minFreq = 50.0f;
-            float maxFreq = Math.Min(sampleRate / 2f, 20000.0f);
+            float maxFreq = Math.Min(effectiveSampleRate / 2f, 20000.0f);
 
+            const double minDb = -68.0;
+            const double maxDb = 7.0;
             for (int band = 0; band < SpectrumBands; band++)
             {
                 float f1 = GetFrequencyForEdge(band, SpectrumBands, minFreq, maxFreq);
                 float f2 = GetFrequencyForEdge(band + 1, SpectrumBands, minFreq, maxFreq);
 
                 int start = Math.Max(1, (int)Math.Floor(f1 / binWidth));
-                int end = Math.Min(bins - 1, Math.Max(start + 1, (int)Math.Ceiling(f2 / binWidth)));
+                int end = Math.Min(bins, Math.Max(start + 1, (int)Math.Ceiling(f2 / binWidth)));
 
                 double peak = 0.0;
                 double sumSq = 0.0;
                 int count = 0;
-
                 for (int i = start; i < end; i++)
                 {
-                    double real = _fftBuffer[i].X;
-                    double imag = _fftBuffer[i].Y;
-                    double mag = Math.Sqrt(real * real + imag * imag);
-                    peak = Math.Max(peak, mag);
+                    double mag = halfMag[i];
+                    if (mag > peak) peak = mag;
                     sumSq += mag * mag;
                     count++;
                 }
 
-                double rms = count > 0 ? Math.Sqrt(sumSq / count) : 0.0;
-                double value = 0.75 * peak + 0.25 * rms; // stronger peak emphasis
+                double rms = count > 0 ? Math.Sqrt(sumSq / Math.Max(1, count)) : 0.0;
+                double value = 0.75 * peak + 0.25 * rms;
 
-                // Perceptual/log mapping 0..1 (raise constant to push small values lower)
-                double vLog = Math.Log10(1.0 + 25.0 * value) / Math.Log10(26.0);
+                double db = 20.0 * Math.Log10(Math.Max(value, 1e-12));
+                double t = (db - minDb) / (maxDb - minDb);
+                float v = (float)Math.Clamp(t, 0.0, 1.0);
+                v = (float)Math.Pow(v, 1.05);
 
-                // Expand dynamic range: small smaller, large larger
-                float v = (float)Math.Pow(Math.Clamp(vLog, 0.0, 1.0), 1.70f);
-
-                // Additional soft floor to reduce small lobes further without affecting peaks
-                const float floor = 0.18f;  // below this level, attenuate strongly
-                if (v < floor)
-                {
-                    v *= 0.28f; // push very small energies lower but not to zero
-                }
-                else
-                {
-                    float t = (v - floor) / (1f - floor); // remap to 0..1
-                    v = (float)Math.Pow(Math.Clamp(t, 0f, 1f), 1.25f); // gentle shaping above floor
-                }
-
-                _spectrumData[band] = Math.Clamp(v, 0f, 1f);
+                _spectrumData[band] = v;
             }
+
+            Array.Copy(_spectrumData, _smoothedData, SpectrumBands);
+            return true;
         }
 
         private static float GetFrequencyForEdge(int edgeIndex, int bands, float minFreq, float maxFreq)
         {
-            // Log-spaced edges including both ends
             float logMin = (float)Math.Log10(minFreq);
             float logMax = (float)Math.Log10(maxFreq);
             float t = Math.Clamp(edgeIndex / (float)bands, 0f, 1f);
             return (float)Math.Pow(10, logMin + (logMax - logMin) * t);
         }
 
-        private void ApplySmoothing()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private double LowpassAt(long absIndex)
         {
-            const float smoothFactor = 0.8f;
-            
-            for (int i = 0; i < SpectrumBands; i++)
+            double value = 0.0;
+            int center = WebLowpassRadius;
+            for (int i = 0; i <= WebLowpassRadius; i++)
             {
-                _smoothedData[i] = _smoothedData[i] * smoothFactor + _spectrumData[i] * (1.0f - smoothFactor);
+                double wPlus = _webFir[center + i];
+                double wMinus = _webFir[center - i];
+                float sPlus = ReadHistory(absIndex + (2L * i));
+                float sMinus = ReadHistory(absIndex - (2L * i));
+                value += wPlus * sPlus + wMinus * sMinus;
             }
+            value -= _webFir[center] * ReadHistory(absIndex);
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private float ReadHistory(long absIndex)
+        {
+            int available = (int)Math.Min(_historyCapacity, _historyTotal);
+            long firstAbs = _historyTotal - available;
+            if (absIndex < firstAbs) return 0f;
+            if (absIndex >= _historyTotal) return 0f;
+            long rel = absIndex - firstAbs;
+            int earliestIndex = (_historyTotal >= _historyCapacity) ? _historyWrite : 0;
+            int idx = (int)((earliestIndex + rel) % _historyCapacity);
+            return _history[idx];
+        }
+
+        private static double[] BuildBlackman(int length)
+        {
+            var w = new double[length];
+            if (length <= 1) { w[0] = 1.0; return w; }
+            for (int i = 0; i < length; i++)
+            {
+                double x = (double)i / (length - 1);
+                w[i] = 0.42 - 0.5 * Math.Cos(2 * Math.PI * x) + 0.08 * Math.Cos(4 * Math.PI * x);
+            }
+            return w;
+        }
+
+        private static double[] BuildGaussianFir(int radius, double sigma)
+        {
+            int len = radius * 2 + 1;
+            var fir = new double[len];
+            double denom = Math.Sqrt(2.0 * Math.PI * sigma);
+            for (int i = -radius; i <= radius; i++)
+            {
+                fir[i + radius] = Math.Exp(-(i * (double)i) / (2.0 * sigma)) / denom;
+            }
+            return fir;
+        }
+
+        private static int NextPowerOfTwo(int v)
+        {
+            v--;
+            v |= v >> 1;
+            v |= v >> 2;
+            v |= v >> 4;
+            v |= v >> 8;
+            v |= v >> 16;
+            v++;
+            return v;
         }
 
         private static int GetNextPowerOfTwo(int value)

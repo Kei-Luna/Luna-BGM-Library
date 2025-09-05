@@ -239,7 +239,7 @@
                                               StartColor="#00E5FF"
                                               EndColor="#FF4BCD"
                                               PeakExponent="1.6"
-                                              VerticalScale="1.6"
+                                              VerticalScale="3.0"
                                               LobeWidthFactor="2.2"/>
                 </Border>
 

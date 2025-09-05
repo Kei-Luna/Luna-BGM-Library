@@ -2,6 +2,7 @@ using LunaBgmLibrary.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,7 +15,14 @@ namespace LunaBgmLibrary.Controls
         private float[] _spectrumData = new float[32];
         private float[] _smoothedData = new float[32];
         private readonly DispatcherTimer _updateTimer;
+        private bool _isRenderingHooked;
+        private readonly Stopwatch _renderStopwatch = new Stopwatch();
+        private double _lastInvalidateMs;
         private SpectrumAnalyzer? _analyzer;
+
+        public static readonly DependencyProperty MaxRefreshHzProperty =
+            DependencyProperty.Register(nameof(MaxRefreshHz), typeof(double), typeof(SpectrumDisplay),
+                new PropertyMetadata(120.0));
 
         public static readonly DependencyProperty BarColorProperty =
             DependencyProperty.Register(nameof(BarColor), typeof(Brush), typeof(SpectrumDisplay),
@@ -129,7 +137,12 @@ namespace LunaBgmLibrary.Controls
                 _analyzer = value;
                 
                 if (_analyzer != null)
+                {
                     _analyzer.SpectrumUpdated += OnSpectrumUpdated;
+                    // Ensure bar count matches analyzer output bands
+                    if (BarCount != _analyzer.SpectrumBands)
+                        BarCount = _analyzer.SpectrumBands;
+                }
             }
         }
 
@@ -143,12 +156,22 @@ namespace LunaBgmLibrary.Controls
         {
             _updateTimer = new DispatcherTimer(DispatcherPriority.Render)
             {
-                Interval = TimeSpan.FromMilliseconds(15)
+                Interval = TimeSpan.FromMilliseconds(1)
             };
             _updateTimer.Tick += (_, __) => InvalidateVisual();
             _updateTimer.Start();
 
             IsHitTestVisible = false;
+
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+            _renderStopwatch.Start();
+        }
+
+        public double MaxRefreshHz
+        {
+            get => (double)GetValue(MaxRefreshHzProperty);
+            set => SetValue(MaxRefreshHzProperty, Math.Max(1.0, Math.Min(240.0, value)));
         }
 
         private static void OnBarCountChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -194,6 +217,40 @@ namespace LunaBgmLibrary.Controls
             centerBrush.GradientStops.Add(new GradientStop(Color.FromArgb(130, 255, 255, 255), 0.5));
             centerBrush.GradientStops.Add(new GradientStop(Color.FromArgb(200, 255, 255, 255), 1.0));
             drawingContext.DrawRectangle(centerBrush, null, new Rect(0, midY - 0.75, ActualWidth, 1.5));
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            // Prefer CompositionTarget.Rendering for high refresh (syncs to monitor refresh).
+            if (!_isRenderingHooked)
+            {
+                CompositionTarget.Rendering += OnCompositionRendering;
+                _isRenderingHooked = true;
+            }
+            // Disable fallback timer while rendering hook is active.
+            _updateTimer.Stop();
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            if (_isRenderingHooked)
+            {
+                CompositionTarget.Rendering -= OnCompositionRendering;
+                _isRenderingHooked = false;
+            }
+            // Re-enable fallback timer when not attached to visual tree.
+            _updateTimer.Start();
+        }
+
+        private void OnCompositionRendering(object? sender, EventArgs e)
+        {
+            double targetMs = 1000.0 / Math.Max(1.0, MaxRefreshHz);
+            double nowMs = _renderStopwatch.Elapsed.TotalMilliseconds;
+            if (nowMs - _lastInvalidateMs >= targetMs - 0.25) // small slack
+            {
+                _lastInvalidateMs = nowMs;
+                InvalidateVisual();
+            }
         }
 
         private void SmoothSpectrum()
@@ -423,6 +480,11 @@ namespace LunaBgmLibrary.Controls
         ~SpectrumDisplay()
         {
             _updateTimer?.Stop();
+            if (_isRenderingHooked)
+            {
+                CompositionTarget.Rendering -= OnCompositionRendering;
+                _isRenderingHooked = false;
+            }
             
             if (_analyzer != null)
                 _analyzer.SpectrumUpdated -= OnSpectrumUpdated;
