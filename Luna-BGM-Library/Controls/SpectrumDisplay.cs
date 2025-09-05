@@ -318,7 +318,7 @@ namespace LunaBgmLibrary.Controls
                 // small round cap near the top: within this normalized half-width,
                 // use a reduced exponent to soften the tip while keeping steep flanks
                 const double capWidth = 0.20; // 0..1 range of |t| (wider for rounder tips)
-                double topSharpFactor = 0.68;   // fraction of sharpness at the very top
+                double topSharpFactor = 0.40;   // fraction of sharpness at the very top
 
                 // top path
                 ctx.BeginFigure(new Point(left, midY), isFilled: true, isClosed: true);
