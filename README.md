@@ -26,6 +26,8 @@ Arcaea
 Wuthering Waves  
 Blue Archive  
 Touhou Danmaku Kagura Phantasia Lost  
+GIRLS' FRONTLINE 2  
+SnowBreak  
 
 
 ## Requirements
