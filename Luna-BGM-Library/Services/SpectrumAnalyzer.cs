@@ -163,8 +163,8 @@ namespace LunaBgmLibrary.Services
             float minFreq = 50.0f;
             float maxFreq = Math.Min(effectiveSampleRate / 2f, 20000.0f);
 
-            const double minDb = -68.0;
-            const double maxDb = 7.0;
+            const double minDb = -64.0;
+            const double maxDb = 10.0;
             for (int band = 0; band < SpectrumBands; band++)
             {
                 float f1 = GetFrequencyForEdge(band, SpectrumBands, minFreq, maxFreq);
