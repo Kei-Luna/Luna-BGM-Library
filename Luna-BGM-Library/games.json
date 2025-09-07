@@ -133,6 +133,12 @@
       "downloadUrls": [
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/sb_3.1.0.139/SnowBreak_v3.1.0.139.7z"
       ]
+    },
+    {
+      "name": "Arknights-Endfield_v0.5.28",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ANEF_0.5.28/Arknights-Endfield_v0.5.28.7z"
+      ]
     }
   ]
 }
