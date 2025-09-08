@@ -255,7 +255,7 @@ namespace LunaBgmLibrary.Controls
 
         private void SmoothSpectrum()
         {
-            const float smoothingFactor = 0.85f;
+            const float smoothingFactor = 0.70f;
 
             for (int i = 0; i < _spectrumData.Length; i++)
             {

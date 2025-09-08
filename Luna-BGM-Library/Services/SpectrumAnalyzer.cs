@@ -153,7 +153,8 @@ namespace LunaBgmLibrary.Services
                 double im = buf[i].Y;
                 double mag = Math.Sqrt(re * re + im * im) * norm;
                 float cur = (float)mag;
-                halfMag[i] = 0.5f * (cur + _webPrevSpectrum[i]);
+                // Disable temporal smoothing: use current magnitude only
+                halfMag[i] = cur;
                 _webPrevSpectrum[i] = cur;
             }
 
