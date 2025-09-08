@@ -139,6 +139,15 @@
       "downloadUrls": [
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/ANEF_0.5.28/Arknights-Endfield_v0.5.28.7z"
       ]
+    },
+    {
+      "name": "Project-Sekai_v5.6.0.20",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PS_5.6.0.20/Project-Sekai_v5.6.0.20.7z.001",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PS_5.6.0.20/Project-Sekai_v5.6.0.20.7z.002",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PS_5.6.0.20/Project-Sekai_v5.6.0.20.7z.003",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PS_5.6.0.20/Project-Sekai_v5.6.0.20.7z.004"
+      ]
     }
   ]
 }

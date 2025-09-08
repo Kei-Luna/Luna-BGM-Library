@@ -28,6 +28,8 @@ Blue Archive
 Touhou Danmaku Kagura Phantasia Lost  
 GIRLS' FRONTLINE 2  
 SnowBreak  
+Arknights Endfield  
+Project Sekai  
 
 
 ## Requirements
