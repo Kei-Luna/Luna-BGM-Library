@@ -201,6 +201,9 @@ namespace LunaBgmLibrary.Controls
             if (ActualWidth <= 0 || ActualHeight <= 0 || _spectrumData.Length == 0)
                 return;
 
+            // Clip spectrum drawings to bounds so they don't overflow
+            drawingContext.PushClip(new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight)));
+
             SmoothSpectrum();
 
             // Draw multiple mountains using two cubic Bézier curves per mountain
@@ -217,6 +220,9 @@ namespace LunaBgmLibrary.Controls
             centerBrush.GradientStops.Add(new GradientStop(Color.FromArgb(130, 255, 255, 255), 0.5));
             centerBrush.GradientStops.Add(new GradientStop(Color.FromArgb(200, 255, 255, 255), 1.0));
             drawingContext.DrawRectangle(centerBrush, null, new Rect(0, midY - 0.75, ActualWidth, 1.5));
+
+            // Remove clipping region
+            drawingContext.Pop();
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -322,6 +328,10 @@ namespace LunaBgmLibrary.Controls
                 const double widthMax = 1.25; // scale at lowest mountains
                 double half = halfWidthBase * (widthMin + (widthMax - widthMin) * (1.0 - a));
                 half = Math.Max(1.0, half);
+                // Clamp to nearest edge so outer mountains touch bounds exactly
+                double maxHalfByBounds = Math.Max(1.0, Math.Min(cx, w - cx));
+                if (half > maxHalfByBounds)
+                    half = maxHalfByBounds;
                 // Handle ratios α, β by height: higher -> smaller, lower -> larger
                 // α controls base handle length, β controls approach near the peak
                 const double alphaMin = 0.25, alphaMax = 0.65;
