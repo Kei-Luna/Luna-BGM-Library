@@ -203,8 +203,8 @@ namespace LunaBgmLibrary.Controls
 
             SmoothSpectrum();
 
-            // Draw 32 overlapping lobes (mirrored polygons) to emulate the aesthetic
-            DrawOverlappingLobes(drawingContext);
+            // Draw multiple mountains using two cubic Bézier curves per mountain
+            DrawBezierMountains(drawingContext);
 
             // Center line highlight
             double midY = ActualHeight * 0.5;
@@ -255,7 +255,7 @@ namespace LunaBgmLibrary.Controls
 
         private void SmoothSpectrum()
         {
-            const float smoothingFactor = 0.70f;
+            const float smoothingFactor = 0.30f;
 
             for (int i = 0; i < _spectrumData.Length; i++)
             {
@@ -292,18 +292,17 @@ namespace LunaBgmLibrary.Controls
             return pts;
         }
 
-        private void DrawOverlappingLobes(DrawingContext dc)
+        private void DrawBezierMountains(DrawingContext dc)
         {
             int n = _smoothedData.Length;
             double w = ActualWidth;
             double h = ActualHeight;
             double midY = h * 0.5;
             if (n <= 0 || w <= 0 || h <= 0) return;
-
             double step = w / n;
             double usable = midY * 0.98;
-            double halfWidthBase = step * LobeWidthFactor * 0.5;
-
+            // Base half width used for width interpolation per mountain height
+            double halfWidthBase = step * LobeWidthFactor * 0.9;
             // Build sortable list by amplitude so taller peaks are drawn last (on top)
             var items = new List<(int i, double x, double a)>();
             for (int i = 0; i < n; i++)
@@ -315,24 +314,27 @@ namespace LunaBgmLibrary.Controls
                 items.Add((i, cx, v));
             }
             items.Sort((a, b) => a.a.CompareTo(b.a));
-
             foreach (var (i, cx, a) in items)
             {
-                // Outer colored lobe
-                double half = halfWidthBase * (1.0 + 0.6 * a); // widen by amplitude
-                // Sharpen tip as amplitude grows (reduced)
-                double sharp = Math.Max(1.0, LobeSharpness + 1.4 * a);
-                // Slope shaping gentler: keep gamma closer to 1 (less compression near top)
-                double gamma = Math.Clamp(1.0 - 0.35 * a, 0.70, 1.0);
+                // Width interpolation by height: higher -> smaller, lower -> larger
+                // half = halfWidthBase * lerp(widthMin, widthMax, (1 - a))
+                const double widthMin = 0.45; // scale at highest mountains
+                const double widthMax = 1.25; // scale at lowest mountains
+                double half = halfWidthBase * (widthMin + (widthMax - widthMin) * (1.0 - a));
+                half = Math.Max(1.0, half);
+                // Handle ratios α, β by height: higher -> smaller, lower -> larger
+                // α controls base handle length, β controls approach near the peak
+                const double alphaMin = 0.25, alphaMax = 0.65;
+                const double betaMin = 0.10, betaMax = 0.40;
+                double alphaHandle = alphaMin + (alphaMax - alphaMin) * (1.0 - a);
+                double betaHandle  = betaMin  + (betaMax  - betaMin)  * (1.0 - a);
                 var color = InterpolateColor(StartColor, EndColor, Math.Clamp(cx / w, 0, 1));
-                byte alpha = (byte)Math.Clamp(70 + a * 150, 70, 210); // adaptive opacity
-                var outer = Color.FromArgb(alpha, color.R, color.G, color.B);
+                byte aByte = (byte)Math.Clamp(70 + a * 150, 70, 210); // adaptive opacity
+                var outer = Color.FromArgb(aByte, color.R, color.G, color.B);
                 var brushOuter = new SolidColorBrush(outer);
                 brushOuter.Freeze();
-
-                var geoOuter = CreateLobeGeometry(cx, a * usable, half, midY, w, h, sharp, gamma);
+                var geoOuter = CreateBezierMountainGeometry(cx, a * usable, half, midY, alphaHandle, betaHandle);
                 dc.DrawGeometry(brushOuter, null, geoOuter);
-
                 // Inner highlight (narrower, whiter)
                 double halfInner = half * 0.70;
                 byte whiteA = (byte)Math.Clamp(40 + a * 130, 40, 200);
@@ -342,7 +344,7 @@ namespace LunaBgmLibrary.Controls
                     (byte)Math.Min(255, (color.B + 255) / 2));
                 var brushInner = new SolidColorBrush(white);
                 brushInner.Freeze();
-                var geoInner = CreateLobeGeometry(cx, a * usable * 0.9, halfInner, midY, w, h, sharp + 0.8 + 0.6 * a, gamma);
+                var geoInner = CreateBezierMountainGeometry(cx, a * usable * 0.9, halfInner, midY, alphaHandle, betaHandle);
                 dc.DrawGeometry(brushInner, null, geoInner);
             }
 
@@ -362,54 +364,44 @@ namespace LunaBgmLibrary.Controls
             }
         }
 
-        private static StreamGeometry CreateLobeGeometry(double centerX, double ampPixels, double halfWidth, double midY, double totalWidth, double totalHeight, double sharpness, double gamma)
+        private static StreamGeometry CreateBezierMountainGeometry(double centerX, double height, double halfWidth, double midY, double alpha, double beta)
         {
-            // Build a symmetric lobe using a cosine^sharpness profile, mirrored vertically
-            int segments = 16;
+            // Build a symmetric closed shape composed of two cubic Bézier curves (top)
+            // and their vertical mirror (bottom), connecting at the peak.
+            double c = centerX;
+            double h = Math.Max(0.0, height);
+            double w = Math.Max(1.0, halfWidth);
+            // Clamp ratios to reasonable ranges
+            alpha = Math.Clamp(alpha, 0.0, 1.0);
+            beta  = Math.Clamp(beta,  0.0, 1.0);
+            // Top: left curve P0->P3 then right curve P3->Q3
+            var P0 = new Point(c - w, midY);
+            var P1 = new Point(c - w + alpha * w, midY);
+            var P2 = new Point(c - beta * w, midY - h);
+            var P3 = new Point(c,         midY - h); // peak
+            var Q1 = new Point(c + beta * w, midY - h);
+            var Q2 = new Point(c + w - alpha * w, midY);
+            var Q3 = new Point(c + w, midY);
+            // Bottom mirror:
+            var B3 = new Point(c,         midY + h);
+            var B2r = new Point(c + beta * w, midY + h);
+            var B1r = new Point(c + w - alpha * w, midY);
+            var B0r = new Point(c + w, midY);
+            var B1l = new Point(c - beta * w, midY + h);
+            var B2l = new Point(c - w + alpha * w, midY);
+            var B3l = new Point(c - w, midY);
             var geom = new StreamGeometry { FillRule = FillRule.Nonzero };
             using (var ctx = geom.Open())
             {
-                double left = Math.Max(0, centerX - halfWidth);
-                double right = Math.Min(totalWidth, centerX + halfWidth);
-                double step = (right - left) / segments;
-                // small round cap near the top: within this normalized half-width,
-                // use a reduced exponent to soften the tip while keeping steep flanks
-                const double capWidth = 0.20; // 0..1 range of |t| (wider for rounder tips)
-                double topSharpFactor = 0.40;   // fraction of sharpness at the very top
-
-                // top path
-                ctx.BeginFigure(new Point(left, midY), isFilled: true, isClosed: true);
-                for (int s = 0; s <= segments; s++)
-                {
-                    double x = left + s * step;
-                    double t = (x - centerX) / halfWidth; // -1..1
-                    t = Math.Clamp(t, -1.0, 1.0);
-                    double tm = Math.Pow(Math.Abs(t), gamma); // slope shaping
-                    // local sharpness blending (smootherstep)
-                    double u = Math.Min(1.0, tm / capWidth);
-                    double blend = u * u * (3 - 2 * u);
-                    double topSharp = Math.Max(1.0, sharpness * topSharpFactor);
-                    double localSharp = topSharp + (sharpness - topSharp) * blend;
-                    double profile = Math.Pow(Math.Max(0.0, Math.Cos(Math.PI * tm / 2.0)), localSharp);
-                    double y = midY - profile * ampPixels;
-                    ctx.LineTo(new Point(x, y), isStroked: true, isSmoothJoin: false);
-                }
-
-                // bottom path mirror
-                for (int s = segments; s >= 0; s--)
-                {
-                    double x = left + s * step;
-                    double t = (x - centerX) / halfWidth;
-                    t = Math.Clamp(t, -1.0, 1.0);
-                    double tm = Math.Pow(Math.Abs(t), gamma);
-                    double u = Math.Min(1.0, tm / capWidth);
-                    double blend = u * u * (3 - 2 * u);
-                    double topSharp = Math.Max(1.0, sharpness * topSharpFactor);
-                    double localSharp = topSharp + (sharpness - topSharp) * blend;
-                    double profile = Math.Pow(Math.Max(0.0, Math.Cos(Math.PI * tm / 2.0)), localSharp);
-                    double y = midY + profile * ampPixels;
-                    ctx.LineTo(new Point(x, y), isStroked: true, isSmoothJoin: false);
-                }
+                ctx.BeginFigure(P0, isFilled: true, isClosed: true);
+                // Top left
+                ctx.BezierTo(P1, P2, P3, isStroked: true, isSmoothJoin: true);
+                // Top right
+                ctx.BezierTo(Q1, Q2, Q3, isStroked: true, isSmoothJoin: true);
+                // Bottom right (mirror)
+                ctx.BezierTo(B1r, B2r, B3, isStroked: true, isSmoothJoin: true);
+                // Bottom left (mirror)
+                ctx.BezierTo(B1l, B2l, B3l, isStroked: true, isSmoothJoin: true);
             }
             geom.Freeze();
             return geom;
