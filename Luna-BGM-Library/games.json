@@ -148,6 +148,12 @@
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PS_5.6.0.20/Project-Sekai_5.6.0.20.7z.003",
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PS_5.6.0.20/Project-Sekai_5.6.0.20.7z.004"
       ]
+    },
+    {
+      "name": "Duet-Night-Abyss",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/dna_fcbt/Duet-Night-Abyss_Final_CBT.7z"
+      ]
     }
   ]
 }
