@@ -154,6 +154,12 @@
       "downloadUrls": [
         "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/dna_fcbt/Duet-Night-Abyss_Final_CBT.7z"
       ]
+    },
+    {
+      "name": "Punishing-Gray-Raaven_4.0.12",
+      "downloadUrls": [
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/PGR_4.0.12/Punishing-Gray-Raaven_4.0.12.7z"
+      ]
     }
   ]
 }

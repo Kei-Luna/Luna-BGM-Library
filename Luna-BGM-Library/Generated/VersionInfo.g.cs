@@ -1,5 +1,5 @@
 namespace LunaBgmLibrary {
     public static class BuildInfo {
-        public const string VersionRaw = "v_2.8.1";
+        public const string VersionRaw = "v_2.9.1";
     }
 }
