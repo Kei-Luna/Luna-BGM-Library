@@ -30,6 +30,8 @@ GIRLS' FRONTLINE 2
 SnowBreak  
 Arknights Endfield  
 Project Sekai  
+Duet-Night-Abyss  
+Punishing-Gray-Raaven  
 
 
 ## Requirements
