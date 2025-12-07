@@ -1,32 +1,11 @@
 {
   "games": [
     {
-      "name": "Genshin Impact(v5.8.0)",
+      "name": "Genshin Impact(v6.2.0)",
       "downloadUrls": [
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.001",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.002",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.003",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.004",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.005",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.006",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.007",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.008",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.009",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.010",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.011",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.012",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.013",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.014",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.015",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.016",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.017",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.018",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.019",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.020",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.021",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.022",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.023",
-        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/gi_5.8.0/Genshin_5.8.0.7z.024"
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/GI_6.2.0/Genshin_6.2.0.7z.001",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/GI_6.2.0/Genshin_6.2.0.7z.002",
+        "https://github.com/Kei-Luna/Luna-BGM-Library-Resource/releases/download/GI_6.2.0/Genshin_6.2.0.7z.003"
       ]
     },
     {
